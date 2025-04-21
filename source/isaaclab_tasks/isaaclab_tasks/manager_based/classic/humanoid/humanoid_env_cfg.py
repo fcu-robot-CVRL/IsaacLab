@@ -127,7 +127,27 @@ class ObservationsCfg:
     @configclass
     class PolicyCfg(ObsGroup):
         """Observations for the policy."""
-
+        """        sin_phase = torch.sin(2 * np.pi * self.phase ).unsqueeze(1)
+        cos_phase = torch.cos(2 * np.pi * self.phase ).unsqueeze(1)
+        self.obs_buf = torch.cat((  self.base_ang_vel  * self.obs_scales.ang_vel,
+                                    self.projected_gravity,
+                                    self.commands[:, :3] * self.commands_scale,
+                                    (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,
+                                    self.dof_vel * self.obs_scales.dof_vel,
+                                    self.actions,
+                                    sin_phase,
+                                    cos_phase
+                                    ),dim=-1)
+        self.privileged_obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,
+                                    self.base_ang_vel  * self.obs_scales.ang_vel,
+                                    self.projected_gravity,
+                                    self.commands[:, :3] * self.commands_scale,
+                                    (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,
+                                    self.dof_vel * self.obs_scales.dof_vel,
+                                    self.actions,
+                                    sin_phase,
+                                    cos_phase
+                                    ),dim=-1)"""
         base_height = ObsTerm(func=mdp.base_pos_z)
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, scale=0.25)
@@ -137,11 +157,6 @@ class ObservationsCfg:
         base_heading_proj = ObsTerm(func=mdp.base_heading_proj, params={"target_pos": (1000.0, 0.0, 0.0)})
         joint_pos_norm = ObsTerm(func=mdp.joint_pos_limit_normalized)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.1)
-        feet_body_forces = ObsTerm(
-            func=mdp.body_incoming_wrench,
-            scale=0.01,
-            params={"asset_cfg": SceneEntityCfg("robot", body_names=["left_foot", "right_foot"])},
-        )
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self):
@@ -189,42 +204,42 @@ class RewardsCfg:
     # (5) Penalty for large action commands
     action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
     # (6) Penalty for energy consumption
-    energy = RewTerm(
-        func=mdp.power_consumption,
-        weight=-0.005,
-        params={
-            "gear_ratio": {
-                ".*_waist.*": 67.5,
-                ".*_upper_arm.*": 67.5,
-                "pelvis": 67.5,
-                ".*_lower_arm": 45.0,
-                ".*_thigh:0": 45.0,
-                ".*_thigh:1": 135.0,
-                ".*_thigh:2": 45.0,
-                ".*_shin": 90.0,
-                ".*_foot.*": 22.5,
-            }
-        },
-    )
+    # energy = RewTerm(
+    #     func=mdp.power_consumption,
+    #     weight=-0.005,
+    #     params={
+    #         "gear_ratio": {
+    #             ".*_waist.*": 67.5,
+    #             ".*_upper_arm.*": 67.5,
+    #             "pelvis": 67.5,
+    #             ".*_lower_arm": 45.0,
+    #             ".*_thigh:0": 45.0,
+    #             ".*_thigh:1": 135.0,
+    #             ".*_thigh:2": 45.0,
+    #             ".*_shin": 90.0,
+    #             ".*_foot.*": 22.5,
+    #         }
+    #     },
+    # )
     # (7) Penalty for reaching close to joint limits
-    joint_pos_limits = RewTerm(
-        func=mdp.joint_pos_limits_penalty_ratio,
-        weight=-0.25,
-        params={
-            "threshold": 0.98,
-            "gear_ratio": {
-                ".*_waist.*": 67.5,
-                ".*_upper_arm.*": 67.5,
-                "pelvis": 67.5,
-                ".*_lower_arm": 45.0,
-                ".*_thigh:0": 45.0,
-                ".*_thigh:1": 135.0,
-                ".*_thigh:2": 45.0,
-                ".*_shin": 90.0,
-                ".*_foot.*": 22.5,
-            },
-        },
-    )
+    # joint_pos_limits = RewTerm(
+    #     func=mdp.joint_pos_limits_penalty_ratio,
+    #     weight=-0.25,
+    #     params={
+    #         "threshold": 0.98,
+    #         "gear_ratio": {
+    #             ".*_waist.*": 67.5,
+    #             ".*_upper_arm.*": 67.5,
+    #             "pelvis": 67.5,
+    #             ".*_lower_arm": 45.0,
+    #             ".*_thigh:0": 45.0,
+    #             ".*_thigh:1": 135.0,
+    #             ".*_thigh:2": 45.0,
+    #             ".*_shin": 90.0,
+    #             ".*_foot.*": 22.5,
+    #         },
+    #     },
+    # )
 
 
 @configclass
