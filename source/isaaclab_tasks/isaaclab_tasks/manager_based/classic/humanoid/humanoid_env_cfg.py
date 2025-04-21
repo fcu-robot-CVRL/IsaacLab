@@ -203,24 +203,24 @@ class RewardsCfg:
     )
     # (5) Penalty for large action commands
     action_l2 = RewTerm(func=mdp.action_l2, weight=-0.01)
-    # (6) Penalty for energy consumption
-    # energy = RewTerm(
-    #     func=mdp.power_consumption,
-    #     weight=-0.005,
-    #     params={
-    #         "gear_ratio": {
-    #             ".*_waist.*": 67.5,
-    #             ".*_upper_arm.*": 67.5,
-    #             "pelvis": 67.5,
-    #             ".*_lower_arm": 45.0,
-    #             ".*_thigh:0": 45.0,
-    #             ".*_thigh:1": 135.0,
-    #             ".*_thigh:2": 45.0,
-    #             ".*_shin": 90.0,
-    #             ".*_foot.*": 22.5,
-    #         }
-    #     },
-    # )
+    (6) Penalty for energy consumption
+    energy = RewTerm(
+        func=mdp.power_consumption,
+        weight=-0.005,
+        params={
+            "gear_ratio": {
+                ".*_waist.*": 67.5,
+                ".*_upper_arm.*": 67.5,
+                "pelvis": 67.5,
+                ".*_lower_arm": 45.0,
+                ".*_thigh:0": 45.0,
+                ".*_thigh:1": 135.0,
+                ".*_thigh:2": 45.0,
+                ".*_shin": 90.0,
+                ".*_foot.*": 22.5,
+            }
+        },
+    )
     # (7) Penalty for reaching close to joint limits
     # joint_pos_limits = RewTerm(
     #     func=mdp.joint_pos_limits_penalty_ratio,
