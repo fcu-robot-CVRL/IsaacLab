@@ -38,6 +38,15 @@ def base_up_proj(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCf
 
     return base_up_vec[:, 2].unsqueeze(-1)
 
+def commands(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Projection of the base up vector onto the world up vector."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    # compute base up vector
+    command0 = asset.data.joint_pos_target
+    command1 = asset.data.joint_vel_target
+    command2 = asset.data.joint_effort_target
+    return torch.cat((command0, command1, command2), dim=-1)
 
 def base_heading_proj(
     env: ManagerBasedEnv, target_pos: tuple[float, float, float], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -73,3 +82,5 @@ def base_angle_to_target(
     angle_to_target = torch.atan2(torch.sin(angle_to_target), torch.cos(angle_to_target))
 
     return angle_to_target.unsqueeze(-1)
+
+
