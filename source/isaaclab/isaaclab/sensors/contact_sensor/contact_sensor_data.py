@@ -66,7 +66,7 @@ class ContactSensorData:
     """
 
     last_air_time: torch.Tensor | None = None
-    """Time spent (in s) in the air before the last contact.
+    """Time spent (in s) in the air before the last contact. 上一次沒有接觸的時間
 
     Shape is (N, B), where N is the number of sensors and B is the number of bodies in each sensor.
 
@@ -75,7 +75,7 @@ class ContactSensorData:
     """
 
     current_air_time: torch.Tensor | None = None
-    """Time spent (in s) in the air since the last detach.
+    """Time spent (in s) in the air since the last detach. 目前沒有接觸任何東西的時間
 
     Shape is (N, B), where N is the number of sensors and B is the number of bodies in each sensor.
 
@@ -84,7 +84,7 @@ class ContactSensorData:
     """
 
     last_contact_time: torch.Tensor | None = None
-    """Time spent (in s) in contact before the last detach.
+    """Time spent (in s) in contact before the last detach. 上一次接觸的時間
 
     Shape is (N, B), where N is the number of sensors and B is the number of bodies in each sensor.
 
@@ -93,7 +93,7 @@ class ContactSensorData:
     """
 
     current_contact_time: torch.Tensor | None = None
-    """Time spent (in s) in contact since the last contact.
+    """Time spent (in s) in contact since the last contact. 目前的接觸時間
 
     Shape is (N, B), where N is the number of sensors and B is the number of bodies in each sensor.
 
