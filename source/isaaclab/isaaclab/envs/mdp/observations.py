@@ -173,6 +173,60 @@ def height_scan(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float 
     return sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
 
 
+def imusener_lin_vel(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
+    """Height scan from the given sensor w.r.t. the sensor's frame.
+
+    The provided offset (Defaults to 0.5) is subtracted from the returned values.
+    """
+    # extract the used quantities (to enable type-hinting)
+    sensor: Imu = env.scene.sensors[sensor_cfg.name]
+    
+    # height scan: height = sensor_height - hit_point_z - offset
+    return sensor.data.lin_vel_b
+
+def imusener_ang_vel(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
+    """Height scan from the given sensor w.r.t. the sensor's frame.
+
+    The provided offset (Defaults to 0.5) is subtracted from the returned values.
+    """
+    # extract the used quantities (to enable type-hinting)
+    sensor: Imu = env.scene.sensors[sensor_cfg.name]
+    
+    # height scan: height = sensor_height - hit_point_z - offset
+    return sensor.data.ang_vel_b
+
+# def imu_data_by_path(env: ManagerBasedEnv, sensor_path: str = "/World/g1/pelvis/Imu_Sensor") -> torch.Tensor:
+#     """獲取指定路徑IMU感測器的數據。
+    
+#     通過直接指定IMU感測器的場景路徑來獲取感測器讀數，適用於感測器未經Scene Entity註冊的情況。
+
+#     Args:
+#         env: 環境實例
+#         sensor_path: IMU感測器的完整路徑，例如 "/World/g1/pelvis/Imu_Sensor"
+        
+#     Returns:
+#         包含線性加速度和角速度的張量 [lin_acc_x, lin_acc_y, lin_acc_z, ang_vel_x, ang_vel_y, ang_vel_z]
+#     """
+#     # 獲取IMU感測器介面
+#     from isaacsim.sensors.physics import _sensor
+#     _imu_sensor_interface = _sensor.acquire_imu_sensor_interface()
+    
+#     # 獲取傳感器讀數
+#     reading = _imu_sensor_interface.get_sensor_reading(sensor_path, use_latest_data=True)
+    
+#     # 創建張量並填充數據
+#     result = torch.zeros((env.num_envs, 6), device=env.device)
+#     # 為所有平行環境複製相同的讀數
+#     for i in range(env.num_envs):
+#         result[i, 0] = reading.lin_acc_x
+#         result[i, 1] = reading.lin_acc_y
+#         result[i, 2] = reading.lin_acc_z
+#         result[i, 3] = reading.ang_vel_x
+#         result[i, 4] = reading.ang_vel_y
+#         result[i, 5] = reading.ang_vel_z
+    
+#     return result
+
 def body_incoming_wrench(env: ManagerBasedEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
     """Incoming spatial wrench on bodies of an articulation in the simulation world frame.
 
