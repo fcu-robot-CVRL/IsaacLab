@@ -381,7 +381,8 @@ G1_CFG = ArticulationCfg(
 
 
 G1_MINIMAL_CFG = G1_CFG.copy()
-G1_MINIMAL_CFG.spawn.usd_path = f"/home/fcuai/Desktop/robot/sensor/G1/G1.usd"
+G1_MINIMAL_CFG.spawn.usd_path = f"/home/fcuai/Desktop/G1.usd"
+# G1_MINIMAL_CFG.spawn.usd_path = f"{ISAACLAB_NUCLEUS_DIR}/Robots/Unitree/G1/g1_minimal.usd"
 """Configuration for the Unitree G1 Humanoid robot with fewer collision meshes.
 
 This configuration removes most collision meshes to speed up simulation.
