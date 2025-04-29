@@ -24,7 +24,15 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         # no terrain curriculum
         self.curriculum.terrain_levels = None
 
-        self.scene.imu_scanner.prim_path = "{ENV_REGEX_NS}/Robot/torso_link"
+        # self.scene.imu_scanner.prim_path = "{ENV_REGEX_NS}/Robot/torso_link"
+        
+        self.scene.imu_scanner_pelvis.prim_path = "{ENV_REGEX_NS}/Robot/pelvis"
+        self.scene.imu_scanner_L_elbow.prim_path = "{ENV_REGEX_NS}/Robot/left_elbow_roll_link"
+        self.scene.imu_scanner_R_elbow.prim_path = "{ENV_REGEX_NS}/Robot/right_elbow_roll_link"
+        self.scene.imu_scanner_L_knee.prim_path = "{ENV_REGEX_NS}/Robot/left_knee_link"
+        self.scene.imu_scanner_R_knee.prim_path = "{ENV_REGEX_NS}/Robot/right_knee_link"
+        
+        # self.scene.contact_sensor.prim_path = "{ENV_REGEX_NS}/Robot/torso_link"
         # Rewards
         self.rewards.track_ang_vel_z_exp.weight = 1.0
         self.rewards.lin_vel_z_l2.weight = -0.2

@@ -71,14 +71,29 @@ class MySceneCfg(InteractiveSceneCfg):
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
-    imu_scanner = ImuCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/base",
+    # imu_scanner = ImuCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/base",
+    # )
+    imu_scanner_pelvis = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base"
+    )
+    imu_scanner_L_elbow = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base"
+    )
+    imu_scanner_R_elbow = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base"
+    )
+    imu_scanner_L_knee = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base"
+    )
+    imu_scanner_R_knee = ImuCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base"
     )
     
     # contact sensor
-    contact_sensor = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/",
-    )
+    # contact_sensor = ContactSensorCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/base",
+    # )
 
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
     # lights
@@ -146,16 +161,73 @@ class ObservationsCfg:
             noise=Unoise(n_min=-0.1, n_max=0.1),
             clip=(-1.0, 1.0),
         )
-        imuser_ang = ObsTerm(
+        # imuser_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imuser_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+
+        # imu_scanner_pelvis -------------------------------------------------------
+        imu_scanner_pelvis_ang = ObsTerm(
             func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner")},
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
             noise=Unoise(n_min=-0.1, n_max=0.1),
         )
-        imuser_lin = ObsTerm(
+        imu_scanner_pelvis_lin = ObsTerm(
             func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner")},
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
             noise=Unoise(n_min=-0.1, n_max=0.1),
         )
+        # imu_scanner_L_elbow -------------------------------------------------------
+        imu_scanner_L_elbow_ang = ObsTerm(
+            func=mdp.imusener_ang_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        imu_scanner_L_elbow_lin = ObsTerm(
+            func=mdp.imusener_lin_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        # imu_scanner_R_elbow -------------------------------------------------------
+        imu_scanner_R_elbow_ang = ObsTerm(
+            func=mdp.imusener_ang_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        imu_scanner_L_elbow_lin = ObsTerm(
+            func=mdp.imusener_lin_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        # imu_scanner_L_knee -------------------------------------------------------
+        imu_scanner_L_knee_ang = ObsTerm(
+            func=mdp.imusener_ang_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        imu_scanner_L_knee_lin = ObsTerm(
+            func=mdp.imusener_lin_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        # imu_scanner_R_knee -------------------------------------------------------
+        imu_scanner_L_elbow_ang = ObsTerm(
+            func=mdp.imusener_ang_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+        imu_scanner_L_elbow_lin = ObsTerm(
+            func=mdp.imusener_lin_vel,
+            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
+            noise=Unoise(n_min=-0.1, n_max=0.1),
+        )
+
 
         def __post_init__(self):
             self.enable_corruption = True
