@@ -307,3 +307,235 @@ def track_ang_vel_z_exp(
     # compute the error
     ang_vel_error = torch.square(env.command_manager.get_command(command_name)[:, 2] - asset.data.root_ang_vel_b[:, 2])
     return torch.exp(-ang_vel_error / std**2)
+
+# 測試-----------------------------------------------------------------------------
+# def move_towards_target(
+#     env: ManagerBasedRLEnv, 
+#     target_pos: tuple[float, float, float],
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     """Reward for moving towards the target position."""
+#     # extract the used quantities (to enable type-hinting)
+#     asset: RigidObject = env.scene[asset_cfg.name]
+    
+#     # 將目標位置轉換為張量
+#     target_pos_tensor = torch.tensor(target_pos, device=env.device, dtype=torch.float32)
+    
+#     # 獲取機器人當前位置和速度
+#     current_pos = asset.data.root_pos_w[:, :3]  # 取 x, y, z 坐標
+#     current_velocity = asset.data.root_lin_vel_b[:, :2]  # 取 x, y 速度（身體坐標系）
+    
+#     # 計算到目標的方向向量（只考慮水平方向）
+#     to_target_vector = target_pos_tensor[:2] - current_pos[:, :2]  # 忽略 z 軸
+#     target_distance = torch.norm(to_target_vector, dim=1, keepdim=True)
+    
+#     # 計算目標方向的單位向量（避免除零）
+#     target_direction = torch.where(
+#         target_distance > 0.01,
+#         to_target_vector / target_distance,
+#         torch.zeros_like(to_target_vector)
+#     )
+    
+#     # 計算速度在目標方向上的投影（點積）
+#     velocity_projection = torch.sum(current_velocity * target_direction, dim=1)
+    
+#     # 只獎勵正向移動（朝向目標），使用 clamp 限制在 0 以上
+#     return torch.clamp(velocity_projection, min=0.0)
+
+# # contact sensor rewards
+# def contact_ground_reward(
+#     env: ManagerBasedRLEnv, 
+#     threshold: float = 1.0,
+#     sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_forces")
+# ) -> torch.Tensor:
+#     """Reward for contact sensor touching the ground."""
+#     # extract the used quantities (to enable type-hinting)
+#     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    
+#     # 獲取接觸力數據
+#     net_contact_forces = contact_sensor.data.net_forces_w_history
+    
+#     print(f"net_contact_forces shape: {net_contact_forces.shape}")
+#     print(f"env.num_envs: {env.num_envs}")
+#     print(f"sensor_cfg.body_ids: {sensor_cfg.body_ids}")
+
+#     # 如果沒有指定 body_ids，使用所有 body
+#     if hasattr(sensor_cfg, 'body_ids') and sensor_cfg.body_ids is not None:
+#         contact_forces = net_contact_forces[:, :, sensor_cfg.body_ids]
+#     else:
+#         contact_forces = net_contact_forces
+    
+#     # 計算接觸力的大小
+#     contact_force_magnitude = torch.norm(contact_forces, dim=-1)
+    
+#     # 檢查是否有接觸（對所有時間步和body取最大值）
+#     if contact_force_magnitude.dim() > 1:
+#         # 如果有多個維度，沿著最後的維度取最大值
+#         is_contact = torch.max(contact_force_magnitude.view(env.num_envs, -1), dim=1)[0] > threshold
+#     else:
+#         is_contact = contact_force_magnitude > threshold
+    
+#     # 返回獎勵
+#     return is_contact.float()
+
+# def leg_self_collision_penalty(
+#     env: ManagerBasedRLEnv,
+#     dangerous_knee_angle: float = 2.5,
+#     dangerous_hip_yaw_angle: float = 0.7,
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     """Penalize leg self-collision when hip_yaw_link contacts knee_link based on joint angles."""
+#     # extract the used quantities (to enable type-hinting)
+#     asset: Articulation = env.scene[asset_cfg.name]
+    
+#     # 獲取關節位置和名稱
+#     joint_pos = asset.data.joint_pos  # [num_envs, num_joints]
+#     joint_names = asset.joint_names
+    
+#     # 添加調試輸出 - 每100步打印一次
+#     if hasattr(env, 'common_step_counter'):
+#         if env.common_step_counter % 100 == 0:
+#             print(f"Step {env.common_step_counter}:")
+#             print(f"Available joint names: {joint_names}")
+#             print(f"Joint positions shape: {joint_pos.shape}")
+#             # 打印第一個環境的所有關節角度
+#             if env.num_envs > 0:
+#                 print(f"Environment 0 joint angles:")
+#                 for i, name in enumerate(joint_names):
+#                     angle_deg = torch.rad2deg(joint_pos[0, i]).item()
+#                     print(f"  {name}: {joint_pos[0, i]:.4f} rad ({angle_deg:.2f}°)")
+    
+#     # 找出相關關節的索引
+#     joint_indices = {
+#         'left_hip_yaw': None,
+#         'right_hip_yaw': None,
+#         'left_knee': None,
+#         'right_knee': None
+#     }
+    
+#     for i, name in enumerate(joint_names):
+#         name_lower = name.lower()
+#         if "left" in name_lower and "hip" in name_lower and "yaw" in name_lower:
+#             joint_indices['left_hip_yaw'] = i
+#         elif "right" in name_lower and "hip" in name_lower and "yaw" in name_lower:
+#             joint_indices['right_hip_yaw'] = i
+#         elif "left" in name_lower and "knee" in name_lower:
+#             joint_indices['left_knee'] = i
+#         elif "right" in name_lower and "knee" in name_lower:
+#             joint_indices['right_knee'] = i
+    
+#     # 打印找到的關節索引（僅在第一次調用時）
+#     if not hasattr(env, '_joint_indices_printed'):
+#         print(f"Found joint indices: {joint_indices}")
+#         env._joint_indices_printed = True
+    
+#     # 初始化懲罰
+#     penalty = torch.zeros(env.num_envs, device=env.device)
+    
+#     # 檢查左腿自碰撞風險
+#     if joint_indices['left_hip_yaw'] is not None and joint_indices['left_knee'] is not None:
+#         left_hip_yaw = joint_pos[:, joint_indices['left_hip_yaw']]
+#         left_knee = joint_pos[:, joint_indices['left_knee']]
+        
+#         # 添加關鍵角度的調試輸出
+#         if hasattr(env, 'common_step_counter') and env.common_step_counter % 500 == 0:
+#             print(f"Left leg angles - Hip yaw: {torch.rad2deg(left_hip_yaw[0]):.2f}°, Knee: {torch.rad2deg(left_knee[0]):.2f}°")
+        
+#         knee_dangerous = torch.abs(left_knee) > dangerous_knee_angle
+#         hip_yaw_dangerous = torch.abs(left_hip_yaw) > dangerous_hip_yaw_angle
+        
+#         left_collision_risk = knee_dangerous & hip_yaw_dangerous
+        
+#         # 當檢測到碰撞風險時立即打印
+#         if left_collision_risk.any():
+#             collision_envs = torch.where(left_collision_risk)[0]
+#             for env_idx in collision_envs[:3]:  # 只打印前3個環境避免輸出過多
+#                 print(f"LEFT LEG COLLISION RISK in env {env_idx}: Hip yaw={torch.rad2deg(left_hip_yaw[env_idx]):.2f}°, Knee={torch.rad2deg(left_knee[env_idx]):.2f}°")
+        
+#         penalty += left_collision_risk.float()
+    
+#     # 檢查右腿自碰撞風險
+#     if joint_indices['right_hip_yaw'] is not None and joint_indices['right_knee'] is not None:
+#         right_hip_yaw = joint_pos[:, joint_indices['right_hip_yaw']]
+#         right_knee = joint_pos[:, joint_indices['right_knee']]
+        
+#         # 添加關鍵角度的調試輸出
+#         if hasattr(env, 'common_step_counter') and env.common_step_counter % 500 == 0:
+#             print(f"Right leg angles - Hip yaw: {torch.rad2deg(right_hip_yaw[0]):.2f}°, Knee: {torch.rad2deg(right_knee[0]):.2f}°")
+        
+#         knee_dangerous = torch.abs(right_knee) > dangerous_knee_angle
+#         hip_yaw_dangerous = torch.abs(right_hip_yaw) > dangerous_hip_yaw_angle
+        
+#         right_collision_risk = knee_dangerous & hip_yaw_dangerous
+        
+#         # 當檢測到碰撞風險時立即打印
+#         if right_collision_risk.any():
+#             collision_envs = torch.where(right_collision_risk)[0]
+#             for env_idx in collision_envs[:3]:
+#                 print(f"RIGHT LEG COLLISION RISK in env {env_idx}: Hip yaw={torch.rad2deg(right_hip_yaw[env_idx]):.2f}°, Knee={torch.rad2deg(right_knee[env_idx]):.2f}°")
+        
+#         penalty += right_collision_risk.float()
+    
+#     return penalty
+
+
+# def leg_extreme_angles_penalty(
+#     env: ManagerBasedRLEnv,
+#     max_knee_flex: float = 2.8,  # 最大膝關節彎曲角度（約160度）
+#     max_hip_yaw: float = 0.8,    # 最大髖關節偏轉角度（約45度）
+#     combination_threshold: float = 0.7,  # 組合危險閾值係數
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     """Penalize extreme leg angles that may cause self-collision."""
+#     # extract the used quantities (to enable type-hinting)
+#     asset: Articulation = env.scene[asset_cfg.name]
+    
+#     joint_pos = asset.data.joint_pos
+#     joint_names = asset.joint_names
+    
+#     # 找出關節索引
+#     joint_indices = {}
+#     for i, name in enumerate(joint_names):
+#         name_lower = name.lower()
+#         if "left" in name_lower and "hip" in name_lower and "yaw" in name_lower:
+#             joint_indices['left_hip_yaw'] = i
+#         elif "right" in name_lower and "hip" in name_lower and "yaw" in name_lower:
+#             joint_indices['right_hip_yaw'] = i
+#         elif "left" in name_lower and "knee" in name_lower:
+#             joint_indices['left_knee'] = i
+#         elif "right" in name_lower and "knee" in name_lower:
+#             joint_indices['right_knee'] = i
+    
+#     penalty = torch.zeros(env.num_envs, device=env.device)
+    
+#     # 檢查左腿
+#     if joint_indices.get('left_hip_yaw') is not None and joint_indices.get('left_knee') is not None:
+#         left_hip_yaw = joint_pos[:, joint_indices['left_hip_yaw']]
+#         left_knee = joint_pos[:, joint_indices['left_knee']]
+        
+#         # 計算危險程度（0-1之間）
+#         knee_danger = torch.clamp(torch.abs(left_knee) / max_knee_flex, 0, 1)
+#         hip_danger = torch.clamp(torch.abs(left_hip_yaw) / max_hip_yaw, 0, 1)
+        
+#         # 組合危險度：當兩個角度都達到一定程度時懲罰
+#         combined_danger = knee_danger * hip_danger
+#         left_collision = combined_danger > combination_threshold
+        
+#         penalty += left_collision.float()
+    
+#     # 檢查右腿
+#     if joint_indices.get('right_hip_yaw') is not None and joint_indices.get('right_knee') is not None:
+#         right_hip_yaw = joint_pos[:, joint_indices['right_hip_yaw']]
+#         right_knee = joint_pos[:, joint_indices['right_knee']]
+        
+#         # 計算危險程度
+#         knee_danger = torch.clamp(torch.abs(right_knee) / max_knee_flex, 0, 1)
+#         hip_danger = torch.clamp(torch.abs(right_hip_yaw) / max_hip_yaw, 0, 1)
+        
+#         # 組合危險度
+#         combined_danger = knee_danger * hip_danger
+#         right_collision = combined_danger > combination_threshold
+        
+#         penalty += right_collision.float()
+    
+#     return penalty

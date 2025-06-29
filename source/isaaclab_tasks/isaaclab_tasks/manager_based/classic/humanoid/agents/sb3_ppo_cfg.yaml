@@ -1,5 +1,5 @@
 # Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L245
-seed: 42
+# seed: 42
 
 policy: 'MlpPolicy'
 n_timesteps: !!float 5e7
@@ -20,3 +20,43 @@ policy_kwargs: "dict(
                   activation_fn=nn.ReLU,
                   net_arch=dict(pi=[256, 256], vf=[256, 256])
                 )"
+
+# seed: 50
+# batch_size: 64 
+# buffer_size: 100000 # 經驗回放緩衝區大小
+# gamma: 0.98
+# learning_rate: !!float 4.426351861707874e-05
+# learning_starts: 20000 ############
+# policy: 'MlpPolicy'
+# tau: 0.08  # 目標網路更新的平滑係數
+# train_freq: 8  ############
+# n_steps: 512
+# # normalize: False
+# device: "cuda:0"
+# n_timesteps: !!float 5e6  # 總訓練時間步數
+
+# # train_freq: 1  # 每次環境步數後進行一次訓練
+
+
+# # target_entropy: -action_dim  # 目標熵值，默認為自動計算
+# policy_kwargs: "dict(
+#                   log_std_init=-0.1034412732183072,
+#                   net_arch=[400, 300],
+#                   use_sde= False,
+#                 )"
+
+
+# # OrderedDict([('batch_size', 64),
+# #              ('buffer_size', 100000),
+# #              ('gamma', 0.98),
+# #              ('learning_rate', 4.426351861707874e-05),
+# #              ('learning_starts', 20000),
+# #              ('n_timesteps', 2000000.0),
+# #              ('policy', 'MlpPolicy'),
+# #              ('policy_kwargs',
+# #               {'log_std_init': -0.1034412732183072,
+# #                'net_arch': [400, 300],
+# #                'use_sde': False}),
+# #              ('tau', 0.08),
+# #              ('train_freq', 8),
+# #              ('normalize', False)])
