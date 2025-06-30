@@ -99,6 +99,13 @@ class G1Rewards(RewardsCfg):
         params={"asset_cfg": SceneEntityCfg("robot", joint_names="torso_joint")},
     )
 
+    # ---------------------------------------穩定性
+    orientation_stability = RewTerm(
+        func=mdp.orientation_stability,
+        weight=1.0,
+        params={}
+    )
+
 
 @configclass
 class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):

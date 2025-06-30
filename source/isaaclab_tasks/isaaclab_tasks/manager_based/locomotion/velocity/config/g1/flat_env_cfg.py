@@ -25,13 +25,14 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         self.curriculum.terrain_levels = None
 
         # self.scene.imu_scanner.prim_path = "{ENV_REGEX_NS}/Robot/torso_link"
+        
         self.scene.imu_scanner_pelvis.prim_path = "{ENV_REGEX_NS}/Robot/pelvis"
         self.scene.imu_scanner_L_elbow.prim_path = "{ENV_REGEX_NS}/Robot/left_elbow_roll_link"
         self.scene.imu_scanner_R_elbow.prim_path = "{ENV_REGEX_NS}/Robot/right_elbow_roll_link"
         self.scene.imu_scanner_L_knee.prim_path = "{ENV_REGEX_NS}/Robot/left_knee_link"
         self.scene.imu_scanner_R_knee.prim_path = "{ENV_REGEX_NS}/Robot/right_knee_link"
-        self.scene.contact_sensor_left.prim_path = "{ENV_REGEX_NS}/Robot/left_ankle_roll_link"
-        self.scene.contact_sensor_right.prim_path = "{ENV_REGEX_NS}/Robot/right_ankle_roll_link"
+        
+        # self.scene.contact_sensor.prim_path = "{ENV_REGEX_NS}/Robot/torso_link"
         # Rewards
         self.rewards.track_ang_vel_z_exp.weight = 1.0
         self.rewards.lin_vel_z_l2.weight = -0.2
@@ -43,12 +44,8 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_hip_.*", ".*_knee_joint"]
         )
-        # 測試-----------------------------------------
-        # self.rewards.contact_ground_left_foot.weight = 10.0
-        # self.rewards.contact_ground_right_foot.weight = 10.0
-        # self.rewards.move_towards_target.weight = 5.0
-        # self.rewards.leg_self_collision_penalty.weight = -10.0
-        # ---------------------------------------------
+        # -------------Reward 穩定性
+        self.rewards.orientation_stability.weight=1.0
         # Commands
         self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.5, 0.5)
