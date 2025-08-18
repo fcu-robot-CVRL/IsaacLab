@@ -539,3 +539,27 @@ def track_ang_vel_z_exp(
 #         penalty += right_collision.float()
     
 #     return penalty
+def foot_motor_movement_reward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Reward when foot motors are moving (have joint velocity)."""
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    joint_names = asset.joint_names
+    joint_vel = asset.data.joint_vel  # 關節速度
+    
+    # 找出腳部相關關節的索引
+    foot_joint_indices = []
+    for i, name in enumerate(joint_names):
+        name_lower = name.lower()
+        # 尋找包含 ankle 或 foot 的關節
+        if 'ankle' in name_lower or 'foot' in name_lower:
+            foot_joint_indices.append(i)
+    
+    # 如果沒找到腳部關節，返回零獎勵
+    if not foot_joint_indices:
+        return torch.zeros(env.num_envs, device=env.device)
+    
+    # 使用 tanh 函數將獎勵限制在 0-1 之間
+    reward = torch.tanh(torch.sum(torch.abs(joint_vel[:, foot_joint_indices]), dim=1))
+    
+    return reward

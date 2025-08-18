@@ -1,24 +1,56 @@
 # Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L161
-seed: 42
+# for ppo
+# seed: 42
 
-n_timesteps: !!float 1e7
-policy: 'MlpPolicy'
-batch_size: 128
+# n_timesteps: !!float 1e7
+# policy: 'MlpPolicy'
+# batch_size: 128
+# n_steps: 512
+# gamma: 0.99
+# gae_lambda: 0.9
+# n_epochs: 20
+# ent_coef: 0.0
+# sde_sample_freq: 4
+# max_grad_norm: 0.5
+# vf_coef: 0.5
+# learning_rate: !!float 3e-5
+# use_sde: True
+# clip_range: 0.4
+# device: "cuda:0"
+# policy_kwargs: "dict(
+#                   log_std_init=-1,
+#                   ortho_init=False,
+#                   activation_fn=nn.ReLU,
+#                   net_arch=dict(pi=[256, 256], vf=[256, 256])
+#                 )"
+
+seed: 52
 n_steps: 512
+n_timesteps: !!float 1000000
+policy: 'MlpPolicy'
+batch_size: 4096           # SAC 通常使用較大的 batch
 gamma: 0.99
-gae_lambda: 0.9
-n_epochs: 20
-ent_coef: 0.0
-sde_sample_freq: 4
-max_grad_norm: 0.5
-vf_coef: 0.5
-learning_rate: !!float 3e-5
-use_sde: True
-clip_range: 0.4
+tau: 0.005           # Soft update 的參數
+ent_coef: "auto"         # 自動 entropy 調整
+target_update_interval: 1
+# target_entropy : -8
+learning_rate: !!float 5e-4
+buffer_size: 1000000
+train_freq: 1
+gradient_steps: 1
+learning_starts: 80
+# # use_sde: True
 device: "cuda:0"
-policy_kwargs: "dict(
-                  log_std_init=-1,
-                  ortho_init=False,
-                  activation_fn=nn.ReLU,
-                  net_arch=dict(pi=[256, 256], vf=[256, 256])
-                )"
+# policy_kwargs:
+#   "dict(
+#     net_arch= dict(
+#       pi= [256, 256, 128],
+#       qf=[256, 256, 128]
+#     ),
+#     log_std_init= -3,
+#   )"
+
+normalize_input : True
+normalize_value : True
+
+

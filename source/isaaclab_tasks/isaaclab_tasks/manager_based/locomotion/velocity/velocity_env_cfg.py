@@ -97,7 +97,7 @@ class MySceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/Robot/base"
     )
 
-    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
+    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/g1/.*", history_length=3, track_air_time=True)
     # lights
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
@@ -135,7 +135,7 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.002, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
     # 軀幹關節 - 最保守的控制
     # torso_joints = mdp.JointPositionActionCfg(
     #     asset_name="robot", 
@@ -214,8 +214,8 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        # base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
-        # base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
             noise=Unoise(n_min=-0.05, n_max=0.05),
@@ -241,60 +241,60 @@ class ObservationsCfg:
         #     params={"sensor_cfg": SceneEntityCfg("imu_scanner")},
         #     noise=Unoise(n_min=-0.1, n_max=0.1),
         # )
-        imu_scanner_pelvis_ang = ObsTerm(
-            func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        imu_scanner_pelvis_lin = ObsTerm(
-            func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        # imu_scanner_L_elbow -------------------------------------------------------
-        imu_scanner_L_elbow_ang = ObsTerm(
-            func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        imu_scanner_L_elbow_lin = ObsTerm(
-            func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        # imu_scanner_R_elbow -------------------------------------------------------
-        imu_scanner_R_elbow_ang = ObsTerm(
-            func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        imu_scanner_R_elbow_lin = ObsTerm(
-            func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        # imu_scanner_L_knee -------------------------------------------------------
-        imu_scanner_L_knee_ang = ObsTerm(
-            func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        imu_scanner_L_knee_lin = ObsTerm(
-            func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        # imu_scanner_R_knee -------------------------------------------------------
-        imu_scanner_R_knee_ang = ObsTerm(
-            func=mdp.imusener_ang_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        imu_scanner_R_knee_lin = ObsTerm(
-            func=mdp.imusener_lin_vel,
-            params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
+        # imu_scanner_pelvis_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imu_scanner_pelvis_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_pelvis")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # # imu_scanner_L_elbow -------------------------------------------------------
+        # imu_scanner_L_elbow_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imu_scanner_L_elbow_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_elbow")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # # imu_scanner_R_elbow -------------------------------------------------------
+        # imu_scanner_R_elbow_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imu_scanner_R_elbow_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_elbow")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # # imu_scanner_L_knee -------------------------------------------------------
+        # imu_scanner_L_knee_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imu_scanner_L_knee_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_L_knee")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # # imu_scanner_R_knee -------------------------------------------------------
+        # imu_scanner_R_knee_ang = ObsTerm(
+        #     func=mdp.imusener_ang_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
+        # imu_scanner_R_knee_lin = ObsTerm(
+        #     func=mdp.imusener_lin_vel,
+        #     params={"sensor_cfg": SceneEntityCfg("imu_scanner_R_knee")},
+        #     noise=Unoise(n_min=-0.1, n_max=0.1),
+        # )
         # contact_sensor left_ankle -------------------------------------------------------
         # contact_sensor_left_ankle_roll_link = ObsTerm(
         #     func=mdp.contact_sensor_L,
@@ -441,7 +441,7 @@ class RewardsCfg:
     # ------------------------------------------------------------------------------
 
     # -- task
-    track_lin_vel_xy_exp = RewTerm(
+    track_lin_vel_xy_exp = RewTerm( #original weight = 1
         func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     track_ang_vel_z_exp = RewTerm(
@@ -449,16 +449,37 @@ class RewardsCfg:
     )
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
-    alive = RewTerm(func=mdp.is_alive, weight=10)
-    isend = RewTerm(func=mdp.is_terminated, weight=-100.0)
+    # alive = RewTerm(func=mdp.is_alive, weight=10)
+    # isend = RewTerm(func=mdp.is_terminated, weight=-100.0)
     # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
     # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-1.0e-3)
     # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.5)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1e-4)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=	-1e-1)
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
+    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.5)
+    # dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1e-4)
+    # dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=	-1e-1)
+    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.1)
+    # feet_air_time = RewTerm(
+    #     func=mdp.feet_air_time,
+    #     weight=0.125,
+    #     params={
+    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
+    #         "command_name": "base_velocity",
+    #         "threshold": 0.5,
+    #     },
+    # )
+    # undesired_contacts = RewTerm(
+    #     func=mdp.undesired_contacts,
+    #     weight=-1.0,
+    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
+    # )
+    # # -- optional penalties
+    # flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
+    # dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     feet_air_time = RewTerm(
         func=mdp.feet_air_time,
         weight=0.125,
@@ -477,6 +498,14 @@ class RewardsCfg:
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
     dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
 
+    # 新增：腳部馬達運動獎勵
+    foot_motor_movement_reward = RewTerm(
+        func=mdp.foot_motor_movement_reward,
+        weight=0.5  # 獎勵權重，可以調整
+    )
+    
+    # 其他現有獎勵...
+
 
 @configclass
 class TerminationsCfg:
@@ -487,7 +516,7 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
-    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.4})
+    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.27})
 
 
 
