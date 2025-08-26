@@ -62,7 +62,7 @@ class MySceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=7.5)
+    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"],scale=7.5) # initial scale is 7.5, for sac test change to 1.0
 
 
 @configclass

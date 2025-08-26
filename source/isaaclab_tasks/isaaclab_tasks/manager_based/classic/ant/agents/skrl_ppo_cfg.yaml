@@ -1,74 +1,90 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-seed: 42
+seed: 50
 
 
 # Models are instantiated using skrl's model instantiator utility
 # https://skrl.readthedocs.io/en/latest/api/utils/model_instantiators.html
 models:
-  separate: False
+  separate: True
   policy:  # see gaussian_model parameters
     class: GaussianMixin
     clip_actions: False
     clip_log_std: True
-    min_log_std: -20.0
+    min_log_std: -5.0
     max_log_std: 2.0
     initial_log_std: 0.0
     network:
       - name: net
         input: STATES
-        layers: [256, 128, 64]
-        activations: elu
+        layers: [512, 256]
+        activations: relu
     output: ACTIONS
-  value:  # see deterministic_model parameters
+  critic_1:  # see deterministic_model parameters
     class: DeterministicMixin
     clip_actions: False
     network:
       - name: net
-        input: STATES
-        layers: [256, 128, 64]
-        activations: elu
+        input: STATES_ACTIONS
+        layers: [512, 256]
+        activations: relu
+    output: ONE
+  critic_2:  # see deterministic_model parameters
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: STATES_ACTIONS
+        layers: [512, 256]
+        activations: relu
+    output: ONE
+  target_critic_1:  # see deterministic_model parameters
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: STATES_ACTIONS
+        layers: [512, 256]
+        activations: relu
+    output: ONE
+  target_critic_2:  # see deterministic_model parameters
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: STATES_ACTIONS
+        layers: [512, 256]
+        activations: relu
     output: ONE
 
 
-# Rollout memory
+# Replay memory - 大幅減少記憶體大小
 # https://skrl.readthedocs.io/en/latest/api/memories/random.html
 memory:
   class: RandomMemory
-  memory_size: -1  # automatically determined (same as agent:rollouts)
+  memory_size: 100000  # 從 1000000 減少到 100000
 
 
-# PPO agent configuration (field names are from PPO_DEFAULT_CONFIG)
-# https://skrl.readthedocs.io/en/latest/api/agents/ppo.html
+# SAC agent configuration (field names are from SAC_DEFAULT_CONFIG)
+# https://skrl.readthedocs.io/en/latest/api/agents/sac.html
 agent:
-  class: PPO
-  rollouts: 16
-  learning_epochs: 4
-  mini_batches: 2
+  class: SAC
+  memory_size: 100000  # 從 1000000 減少到 100000
+  gradient_steps: 1
+  batch_size: 2048     # 從 4096 減少到 2048
   discount_factor: 0.99
-  lambda: 0.95
-  learning_rate: 3.0e-04
-  learning_rate_scheduler: KLAdaptiveLR
-  learning_rate_scheduler_kwargs:
-    kl_threshold: 0.008
+  polyak: 0.005
+  actor_learning_rate: 5.0e-04
+  critic_learning_rate: 5.0e-04
+  learning_rate_scheduler: null
+  learning_rate_scheduler_kwargs: null
   state_preprocessor: RunningStandardScaler
   state_preprocessor_kwargs: null
-  value_preprocessor: RunningStandardScaler
-  value_preprocessor_kwargs: null
-  random_timesteps: 0
-  learning_starts: 0
-  grad_norm_clip: 1.0
-  ratio_clip: 0.2
-  value_clip: 0.2
-  clip_predicted_values: True
-  entropy_loss_scale: 0.0
-  value_loss_scale: 1.0
-  kl_threshold: 0.0
-  rewards_shaper_scale: 0.6
-  time_limit_bootstrap: False
+  random_timesteps: 80
+  learning_starts: 80
+  grad_norm_clip: 0.0
+  learn_entropy: True
+  entropy_learning_rate: 5.0e-03
+  initial_entropy_value: 1.0
+  target_entropy: null
   # logging and checkpoint
   experiment:
     directory: "ant"
@@ -81,5 +97,5 @@ agent:
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
-  timesteps: 8000
+  timesteps: 160000
   environment_info: log

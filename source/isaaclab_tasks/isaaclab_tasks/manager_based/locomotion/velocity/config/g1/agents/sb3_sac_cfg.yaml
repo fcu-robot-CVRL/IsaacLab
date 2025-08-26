@@ -1,0 +1,91 @@
+# from isaaclab.utils import configclass
+# from stable_baselines3.common.callbacks import CheckpointCallback
+
+# @configclass
+# class G1RoughSB3PPOCfg:
+#     """SB3 PPO configuration for G1 robot on rough terrain."""
+    
+#     # 基本參數
+#     algo_name = "PPO"
+#     policy_type = "MlpPolicy"
+#     device = "cuda"
+#     seed = 0
+    
+#     # PPO 超參數
+#     learning_rate = 3e-4
+#     n_steps = 2048
+#     batch_size = 64
+#     n_epochs = 10
+#     gamma = 0.99
+#     gae_lambda = 0.95
+#     clip_range = 0.2
+#     ent_coef = 0.0
+#     vf_coef = 0.5
+#     max_grad_norm = 0.5
+    
+#     # 訓練配置
+#     total_timesteps = 10000000
+#     log_interval = 1
+    
+#     # 回調函數
+#     checkpoint_callback = CheckpointCallback(
+#         save_freq=100000,
+#         save_path="./logs/sb3/",
+#         name_prefix="g1_rough",
+#         save_replay_buffer=False,
+#         save_vecnormalize=True,
+#     )
+# @configclass
+# class G1FlatSB3PPOCfg:
+#     """SB3 PPO configuration for G1 robot on flat terrain."""
+    
+#     # 基本參數
+#     algo_name = "PPO"
+#     policy_type = "MlpPolicy"
+#     device = "cuda"
+#     seed = 0
+    
+#     # PPO 超參數 (可能與粗糙地形略有不同)
+#     learning_rate = 3e-4
+#     n_steps = 2048
+#     batch_size = 64
+#     n_epochs = 10
+#     gamma = 0.99
+#     gae_lambda = 0.95
+#     clip_range = 0.2
+#     ent_coef = 0.0
+#     vf_coef = 0.5
+#     max_grad_norm = 0.5
+    
+#     # 訓練配置
+#     total_timesteps = 5000000  # 平坦地形可能需要較少的時間步
+#     log_interval = 1
+    
+#     # 回調函數
+#     checkpoint_callback = CheckpointCallback(
+#         save_freq=100000,
+#         save_path="./logs/sb3/",
+#         name_prefix="g1_flat",
+#         save_replay_buffer=False,
+#         save_vecnormalize=True,
+#     )
+
+# Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L245
+seed: 42
+policy: 'MlpPolicy'
+n_timesteps: !!float 5e7
+batch_size: 256
+train_freq: 1  # 每次環境步數後進行一次訓練
+gradient_steps: 1  # 每次更新的梯度步數
+learning_rate: !!float 3e-4
+gamma: 0.99
+tau: 0.005  # 目標網路更新的平滑係數
+ent_coef: "auto"  # 熵正則化係數，設為 "auto" 以自動調整
+target_entropy: "auto"  # 目標熵值，默認為自動計算
+buffer_size: 1_000_000  # 經驗回放緩衝區大小
+device: "cuda:0"
+policy_kwargs: "dict(
+                  log_std_init=-3,
+                  net_arch=dict(pi=[256, 256], qf=[256, 256]),
+                  activation_fn=nn.ReLU
+                )"

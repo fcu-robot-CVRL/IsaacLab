@@ -68,7 +68,7 @@ class RslRlPpoActorCriticRecurrentCfg(RslRlPpoActorCriticCfg):
 class RslRlPpoAlgorithmCfg:
     """Configuration for the PPO algorithm."""
 
-    class_name: str = "PPO"
+    class_name: str = "SAC"
     """The algorithm class name. Default is PPO."""
 
     num_learning_epochs: int = MISSING

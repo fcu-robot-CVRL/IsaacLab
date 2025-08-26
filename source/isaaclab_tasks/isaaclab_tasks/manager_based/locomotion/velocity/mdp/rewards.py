@@ -96,6 +96,18 @@ def track_lin_vel_xy_yaw_frame_exp(
     )
     return torch.exp(-lin_vel_error / std**2)
 
+def get_body_pos_test(
+    env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    robot = env.scene[asset_cfg.name]
+    body_names = robot.body_names
+    body_positions = robot.data.body_pos_w
+    print("所有身體部位位置:")
+    for i, name in enumerate(body_names):
+        pos = body_positions[0, i].cpu().numpy()  # 取第一個環境
+        print(f"{i:2d}: {name:25} x={pos[0]:6.3f}, y={pos[1]:6.3f}, z={pos[2]:6.3f}")
+    
+    return body_positions
 
 def track_ang_vel_z_world_exp(
     env, command_name: str, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
@@ -107,10 +119,43 @@ def track_ang_vel_z_world_exp(
     return torch.exp(-ang_vel_error / std**2)
 
 
-def stand_still_joint_deviation_l1(
-    env, command_name: str, command_threshold: float = 0.06, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+def alternating_step_reward(
+    env, command_name:str, sensor_cfg: SceneEntityCfg,max_last_time=0.5
 ) -> torch.Tensor:
-    """Penalize offsets from the default joint positions when the command is very small."""
-    command = env.command_manager.get_command(command_name)
-    # Penalize motion when command is nearly zero.
-    return mdp.joint_deviation_l1(env, asset_cfg) * (torch.norm(command[:, :2], dim=1) < command_threshold)
+    """
+    Reward when robot alternates single-leg contact within a given time window.
+    
+    Args:
+        env: simulation env
+        sensor_cfg: sensor config
+        threshold: reward clamp
+        command_name: command name
+        window: time window (s) to keep rewarding after a valid swap
+    """
+    contact_sensor = env.scene.sensors[sensor_cfg.name]
+
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]   # (N, 2)
+    last_contact_time = contact_sensor.data.last_contact_time[:, sensor_cfg.body_ids] # (N, 2)
+
+    left_now, right_now = contact_time[:, 0], contact_time[:, 1]
+    left_last, right_last = last_contact_time[:, 0], last_contact_time[:, 1]
+
+    # 換腳獎勵：另一腳剛離地，現在這腳接觸，reward = 上一隻腳離地時間
+    reward_left = torch.where(
+        (left_now > 0.0) & (0.0 < right_last) & (right_last <= max_last_time),
+        right_last,
+        torch.zeros_like(left_now)
+    )
+
+    reward_right = torch.where(
+        (right_now > 0.0) & (0.0 < left_last) & (left_last <= max_last_time),
+        left_last,
+        torch.zeros_like(right_now)
+    )
+
+    reward = reward_left + reward_right
+
+    # no reward for zero command
+    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+
+    return reward
