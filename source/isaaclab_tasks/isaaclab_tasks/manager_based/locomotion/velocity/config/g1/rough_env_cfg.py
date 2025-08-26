@@ -20,12 +20,13 @@ from isaaclab_assets import G1_MINIMAL_CFG  # isort: skip
 class G1Rewards(RewardsCfg):
     """Reward terms for the MDP."""
 
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-10.0)
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=2.0,
+        weight=5.0,
         params={"command_name": "base_velocity", "std": 0.5},
     )
+    print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_world_exp, weight=2.0, params={"command_name": "base_velocity", "std": 0.5}
     )
@@ -96,6 +97,16 @@ class G1Rewards(RewardsCfg):
         weight=-0.1,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names="waist_joint")},
     )
+    
+    alternating_step_reward= RewTerm(
+        func=mdp.alternating_step_reward,
+        weight=-5,
+        params={
+            "command_name": "base_velocity",
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
+            "max_last_time": 0.5,
+        },
+    )
 
 
 @configclass
@@ -131,14 +142,14 @@ class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.undesired_contacts = None
         self.rewards.flat_orientation_l2.weight = -1.0
         self.rewards.action_rate_l2.weight = -0.005
-        self.rewards.dof_acc_l2 = None
-        # self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
-        #     "robot", joint_names=[".*_hip_joint", ".*_calf_joint"]
-        # )
-        self.rewards.dof_torques_l2 = None
-        # self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
-        #     "robot", joint_names=[".*_hip_joint", ".*_calf_joint", ".*_ankle_joint"]
-        # )
+        self.rewards.dof_acc_l2.weight = -1.25e-8
+        self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
+            "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
+        )
+        self.rewards.dof_torques_l2.weight = -1.5e-8
+        self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
+            "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
+        )
 
         # Commands
         self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)

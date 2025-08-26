@@ -36,13 +36,13 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         self.rewards.track_ang_vel_z_exp.weight = 1.0
         self.rewards.lin_vel_z_l2.weight = -0.2
         self.rewards.action_rate_l2.weight = -0.005
-        # self.rewards.dof_acc_l2.weight = -1.0e-7
+        self.rewards.dof_acc_l2.weight = -1.0e-7
         self.rewards.feet_air_time.weight = 0.75
         self.rewards.feet_air_time.params["threshold"] = 0.4
-        # self.rewards.dof_torques_l2.weight = -2.0e-6
-        # self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
-        #     "robot", joint_names=[".*_hip_joint", ".*_calf_joint"]
-        # )
+        self.rewards.dof_torques_l2.weight = -1.2e-7
+        self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
+            "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
+        )
         # 測試-----------------------------------------
         # self.rewards.contact_ground_left_foot.weight = 10.0
         # self.rewards.contact_ground_right_foot.weight = 10.0
@@ -50,7 +50,7 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         # self.rewards.leg_self_collision_penalty.weight = -10.0
         # ---------------------------------------------
         # Commands
-        self.commands.base_velocity.ranges.lin_vel_x = (1.5, 1.5)
+        self.commands.base_velocity.ranges.lin_vel_x = (0.75, 0.75)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)#(-0.5, 0.5)
         self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)#(-1.0, 1.0)
 

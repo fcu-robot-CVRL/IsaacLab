@@ -498,14 +498,25 @@ class RewardsCfg:
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
     dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
 
-    # 新增：腳部馬達運動獎勵
-    foot_motor_movement_reward = RewTerm(
-        func=mdp.foot_motor_movement_reward,
-        weight=0.5  # 獎勵權重，可以調整
-    )
-    
-    # 其他現有獎勵...
 
+    # 新增：腳部馬達運動獎勵
+    # foot_motor_movement_reward = RewTerm(
+    #     func=mdp.foot_motor_movement_reward,
+    #     weight=0.5  # 獎勵權重，可以調整
+    # )
+    
+    # # 新增：對稱步態獎勵（選擇其中一個）
+    # knee_symmetry_reward = RewTerm(
+    #     func=mdp.knee_symmetry_reward,
+    #     weight=1.0  # 或使用 simple_knee_alternation_reward
+    # )
+    
+    # 替換為大腿對稱獎勵
+    # thigh_symmetry_reward = RewTerm(
+    #     func=mdp.thigh_symmetry_reward,
+    #     weight=1.0
+    # )
+    action_smoothness_reward = RewTerm(func=mdp.action_smoothness_reward,weight=5,params={"smoothness_weight": 1.0, "max_change_rate": 0.3})
 
 @configclass
 class TerminationsCfg:
@@ -516,7 +527,7 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
-    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.27})
+    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.26})
 
 
 

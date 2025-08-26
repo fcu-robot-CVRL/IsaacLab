@@ -1,11 +1,9 @@
-import isaacgym
-
 import torch
 import torch.nn as nn
 
 # import the skrl components to build the RL system
 from skrl.agents.torch.ppo import PPO, PPO_DEFAULT_CONFIG
-from skrl.envs.loaders.torch import load_isaacgym_env_preview4
+from skrl.envs.loaders.torch import load_isaaclab_env
 from skrl.envs.wrappers.torch import wrap_env
 from skrl.memories.torch import RandomMemory
 from skrl.models.torch import DeterministicMixin, GaussianMixin, Model
@@ -27,7 +25,9 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
         GaussianMixin.__init__(self, clip_actions, clip_log_std, min_log_std, max_log_std, reduction)
         DeterministicMixin.__init__(self, clip_actions)
 
-        self.net = nn.Sequential(nn.Linear(self.num_observations, 256),
+        self.net = nn.Sequential(nn.Linear(self.num_observations, 512),
+                                 nn.ELU(),
+                                 nn.Linear(512, 256),
                                  nn.ELU(),
                                  nn.Linear(256, 128),
                                  nn.ELU(),
@@ -56,7 +56,7 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
 
 
 # load and wrap the Isaac Gym environment
-env = load_isaacgym_env_preview4(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
+env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
 env = wrap_env(env)
 
 device = env.device
@@ -113,7 +113,7 @@ agent = PPO(models=models,
 
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 8000, "headless": True}
+cfg_trainer = {"timesteps": 640000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training

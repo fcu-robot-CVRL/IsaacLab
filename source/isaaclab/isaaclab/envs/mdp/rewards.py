@@ -539,6 +539,7 @@ def track_ang_vel_z_exp(
 #         penalty += right_collision.float()
     
 #     return penalty
+#腳步馬達在動給獎勵
 def foot_motor_movement_reward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Reward when foot motors are moving (have joint velocity)."""
     # extract the used quantities (to enable type-hinting)
@@ -563,3 +564,56 @@ def foot_motor_movement_reward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg
     reward = torch.tanh(torch.sum(torch.abs(joint_vel[:, foot_joint_indices]), dim=1))
     
     return reward
+#左右腳膝蓋對稱獎勵
+def thigh_symmetry_reward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Simple reward for alternating thigh positions - one forward, one back."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    
+    joint_names = asset.joint_names
+    joint_pos = asset.data.joint_pos
+    default_joint_pos = asset.data.default_joint_pos
+    
+    # 找左右大腿關節
+    left_thigh_idx = None
+    right_thigh_idx = None
+    
+    for i, name in enumerate(joint_names):
+        name_lower = name.lower()
+        if 'left' in name_lower and 'thigh' in name_lower:
+            left_thigh_idx = i
+        elif 'right' in name_lower and 'thigh' in name_lower:
+            right_thigh_idx = i
+    
+    if left_thigh_idx is None or right_thigh_idx is None:
+        return torch.zeros(env.num_envs, device=env.device)
+    
+    # 計算大腿關節偏移（相對於默認位置）
+    left_thigh_move = joint_pos[:, left_thigh_idx] - default_joint_pos[:, left_thigh_idx]
+    right_thigh_move = joint_pos[:, right_thigh_idx] - default_joint_pos[:, right_thigh_idx]
+    
+    # 當左右大腿運動方向相反時給獎勵
+    # 使用乘積：當符號相反時，乘積為負；當符號相同時，乘積為正
+    opposite_movement = -(left_thigh_move * right_thigh_move)  # 負號讓相反方向變成正數
+    
+    # 只獎勵相反運動的情況
+    reward = torch.clamp(opposite_movement, min=0.0, max=1.0)
+    
+    return reward
+
+def action_smoothness_reward(
+    env: ManagerBasedRLEnv,
+    smoothness_weight: float = 1.0,
+    max_change_rate: float = 0.5
+) -> torch.Tensor:
+    """Reward smooth actions and penalize jerky movements."""
+    
+    # 計算動作變化率
+    action_change = torch.abs(env.action_manager.action - env.action_manager.prev_action)
+    
+    # 計算每個環境的平均動作變化
+    avg_change = torch.mean(action_change, dim=1)
+    
+    # 使用指數函數獎勵平滑動作
+    smoothness_reward = torch.exp(-avg_change / max_change_rate)
+    
+    return smoothness_reward * smoothness_weight

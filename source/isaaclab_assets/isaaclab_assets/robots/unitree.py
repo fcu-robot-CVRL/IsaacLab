@@ -407,25 +407,26 @@ G1_CFG = ArticulationCfg(
     ),
     # 初始狀態
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.5), # 初始位置：74cm 高度
+        pos=(0.0, 0.0, 0.3), # 初始位置：74cm 高度
         # rot=(-0.7071, 0.7071, 0.0, 0.0),  # 設定初始旋轉角度 (-90°, -90°, 0°)
         # rot=(0.5, -0.5, -0.5, 0.5),  # 設定初始旋轉角度 (-90°, -90°, 0°)
         # rot=(0.0, 0.0, -0.7071, 0.7071), # (-90, -180, 0)
         joint_pos={ # total: 17
             ".*_shoulder_joint": 0.0,
-            "left_arm_joint": 1.2,
-            "right_arm_joint": -1.2,
-            ".*_hand_joint": 0,
+            "left_arm_joint": 1.0,
+            "right_arm_joint": -1.0,
+            ".*_hand_joint": 0.0,
             "waist_joint": 0.0,
             "left_hip_joint": 0.0,
             "right_hip_joint": 0.0,
-            ".*_thigh_joint": 0.0,
-            ".*_calf_joint": 0.0,
-            ".*_ankle_joint": 0.0,
-            # "left_calf_joint": 1.2,
-            # "left_ankle_joint": -1.2,
-            # "right_calf_joint": -1.2,
-            # "right_ankle_joint": 1.2,
+            "left_thigh_joint": 0.7,
+            "right_thigh_joint": -0.7,
+            # ".*_calf_joint": 0.0,
+            # ".*_ankle_joint": 0.0,
+            "left_calf_joint": -1.2,
+            "left_ankle_joint": 0.5,
+            "right_calf_joint": -1.2,
+            "right_ankle_joint": 0.5,
             "left_foot_joint": 0.0,
             "right_foot_joint": 0.0,
         },
