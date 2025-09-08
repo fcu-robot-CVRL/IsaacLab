@@ -26,6 +26,22 @@ class G1Rewards(RewardsCfg):
         weight=1.0,
         params={"command_name": "base_velocity", "std": 0.5},
     )
+    # print_pos = RewTerm(
+    #     func=mdp.get_body_pos_test, 
+    #     weight=0.0001,
+    #     params={"command_name": "base_velocity", "std": 0.5},
+    # )
+    dir_diff = RewTerm(
+        func=mdp.leg_dir_ang_diff,
+        weight=0.3,
+        params={"command_name": "base_velocity", "std": 3.0},
+    )
+    # print_forward = RewTerm(
+    #     func=mdp.get_forward_direction_test,
+    #     weight=0.0001,
+    #     params={"command_name": "base_velocity", "std": 0.5},
+    # )
+
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_world_exp, weight=2.0, params={"command_name": "base_velocity", "std": 0.5}
     )
@@ -40,7 +56,7 @@ class G1Rewards(RewardsCfg):
     )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-0.1,
+        weight=-1.0,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_ankle_roll_link"),
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_ankle_roll_link"),
@@ -95,9 +111,26 @@ class G1Rewards(RewardsCfg):
     )
     joint_deviation_torso = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names="torso_joint")},
+        weight=-1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names="waist_joint")},
     )
+    
+    alternating_step_reward= RewTerm(
+        func=mdp.alternating_step_reward,
+        weight=-5,
+        params={
+            "command_name": "base_velocity",
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
+            "max_last_time": 0.5,
+        },
+    )
+    ang_vel_sign = RewTerm(func=mdp.joint_vel, 
+        weight=0.1,
+        params={"asset_cfg":
+            SceneEntityCfg(
+            "robot", joint_names=[".*_thigh_joint"]
+        )
+        },)
 
 
 @configclass

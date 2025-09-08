@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-
+from isaaclab.envs import mdp
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
-from isaaclab.utils.math import quat_rotate_inverse, yaw_quat
+from isaaclab.utils.math import quat_apply_inverse, yaw_quat, quat_apply
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -77,7 +77,6 @@ def feet_slide(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg = Scen
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
     contacts = contact_sensor.data.net_forces_w_history[:, :, sensor_cfg.body_ids, :].norm(dim=-1).max(dim=1)[0] > 1.0
     asset = env.scene[asset_cfg.name]
-
     body_vel = asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :2]
     reward = torch.sum(body_vel.norm(dim=-1) * contacts, dim=1)
     return reward
@@ -95,6 +94,169 @@ def track_lin_vel_xy_yaw_frame_exp(
     )
     return torch.exp(-lin_vel_error / std**2)
 
+def get_body_pos_test(
+    env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    robot = env.scene[asset_cfg.name]
+    body_names = robot.body_names
+    body_positions = robot.data.body_pos_w
+    left_thigh_link = body_positions[:, body_names.index("left_thigh_link"), :]
+    right_thigh_link = body_positions[:, body_names.index("right_thigh_link"), :]
+    print("left_thigh_link : ", left_thigh_link[0].cpu().numpy())
+    print("right_thigh_link : ", right_thigh_link[0].cpu().numpy())
+    # print("所有身體部位位置:")
+    # for i, name in enumerate(body_names):
+    #     pos = body_positions[0, i].cpu().numpy()  # 取第一個環境
+    #     print(f"{i:2d}: {name:25} x={pos[0]:6.3f}, y={pos[1]:6.3f}, z={pos[2]:6.3f}")
+    return torch.zeros(env.num_envs, device=env.device)
+
+#me
+def leg_dir_ang_diff(
+    env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    robot = env.scene[asset_cfg.name]
+    #legs
+    body_names = robot.body_names
+    body_positions = robot.data.body_pos_w
+    left_thigh_link = body_positions[:, body_names.index("left_thigh_link"), :]
+    right_thigh_link = body_positions[:, body_names.index("right_thigh_link"), :]
+    #body_dir
+    root_quat_w = robot.data.root_link_pose_w[:, 3:7]
+    forward_vec_b = robot.data.FORWARD_VEC_B
+    forward_vec_w = quat_apply(root_quat_w, forward_vec_b)
+    #leg_deg
+    leg_vec_xy = right_thigh_link[:, :2] - left_thigh_link[:, :2]
+    print("left_thigh_link : ", left_thigh_link[0].cpu().numpy())
+    print("right_thigh_link : ", right_thigh_link[0].cpu().numpy())
+    print("forward direction (world):", forward_vec_w[0].cpu().numpy())
+    print("left->right thigh xy vector:", leg_vec_xy[0].cpu().numpy())
+    #θ = Acos( (A dot B) / (|A| |B|) )
+    forward_vec_xy = forward_vec_w[:, :2]
+    cos_theta = (leg_vec_xy * forward_vec_xy).sum(dim=1) / (leg_vec_xy.norm(dim=1) * forward_vec_xy.norm(dim=1) + 1e-8)
+    # 防止數值誤差超過 [-1, 1]
+    cos_theta = torch.clamp(cos_theta, -1.0, 1.0)
+    theta_rad = torch.acos(cos_theta)
+    theta_deg = theta_rad * 180.0 / torch.pi
+    print("angle between leg_vec_xy and forward_vec_w (deg):", theta_deg[0].cpu().item())
+    
+    # 角度獎勵判斷與計時邏輯
+    if not hasattr(env, 'angle_event_buffer'):
+        env.angle_event_buffer = [{} for _ in range(env.num_envs)]
+
+    rewards = torch.zeros(env.num_envs, device=env.device)
+    current_time = env.episode_length_buf.float() * env.step_dt  # 取得目前時間 (秒)
+    for i in range(env.num_envs):
+        angle = theta_deg[i].item()
+        buffer = env.angle_event_buffer[i]
+        # 狀態1：大於120度
+        if angle > 120:
+            if 'over_120' not in buffer:
+                buffer['over_120'] = current_time
+            buffer.pop('under_60', None)
+        # 狀態2：小於60度
+        elif angle < 60:
+            if 'under_60' not in buffer:
+                buffer['under_60'] = current_time
+            buffer.pop('over_120', None)
+        # 判斷是否在5秒內完成目標
+        # 120->60
+        if 'over_120' in buffer and angle < 60:
+            if current_time - buffer['over_120'] <= 5.0:
+                rewards[i] += 1.0
+                buffer.pop('over_120')
+        # 60->120
+        if 'under_60' in buffer and angle > 120:
+            if current_time - buffer['under_60'] <= 5.0:
+                rewards[i] += 1.0
+                buffer.pop('under_60')
+
+    # 確保回傳型態為 torch.Tensor
+    return rewards.clone().to(env.device)
+#GPT
+# def leg_dir_ang_diff(
+#     env, command_name: str, threshold: float = 1.0, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+# ) -> torch.Tensor:
+#     """Reward when leg direction angle switches between acute (<45) and obtuse (>135) within 1 second."""
+#     robot = env.scene[asset_cfg.name]
+#     body_names = robot.body_names
+#     body_positions = robot.data.body_pos_w
+#     left_thigh_link = body_positions[:, body_names.index("left_thigh_link"), :]
+#     right_thigh_link = body_positions[:, body_names.index("right_thigh_link"), :]
+#     root_quat_w = robot.data.root_link_pose_w[:, 3:7]
+#     forward_vec_b = robot.data.FORWARD_VEC_B
+#     forward_vec_w = quat_apply(root_quat_w, forward_vec_b)
+#     leg_vec_xy = right_thigh_link[:, :2] - left_thigh_link[:, :2]
+#     forward_vec_xy = forward_vec_w[:, :2]
+#     cos_theta = (leg_vec_xy * forward_vec_xy).sum(dim=1) / (leg_vec_xy.norm(dim=1) * forward_vec_xy.norm(dim=1) + 1e-8)
+#     cos_theta = torch.clamp(cos_theta, -1.0, 1.0)
+#     theta_rad = torch.acos(cos_theta)
+#     theta_deg = theta_rad * 180.0 / torch.pi
+
+#     # 印出所有主要參數
+#     print("left_thigh_link[0]:", left_thigh_link[0].cpu().numpy())
+#     print("right_thigh_link[0]:", right_thigh_link[0].cpu().numpy())
+#     print("leg_vec_xy[0]:", leg_vec_xy[0].cpu().numpy())
+#     print("forward_vec_xy[0]:", forward_vec_xy[0].cpu().numpy())
+#     print("cos_theta[0]:", cos_theta[0].cpu().item())
+#     print("theta_deg[0]:", theta_deg[0].cpu().item())
+#     print("angle_state:", getattr(robot, '_angle_state', None))
+#     print("angle_timer:", getattr(robot, '_angle_timer', None))
+#     print("acute[0]:", (theta_deg[0] < 45.0).item())
+#     print("obtuse[0]:", (theta_deg[0] > 135.0).item())
+#     print("reward[0]:", None)  # reward 還沒算
+
+#     # 狀態 buffer
+#     if not hasattr(robot, "_angle_state"):
+#         robot._angle_state = torch.zeros(env.num_envs, dtype=torch.int, device=env.device)  # 0: 銳角, 1: 鈍角
+#         robot._angle_timer = torch.zeros(env.num_envs, dtype=torch.float, device=env.device)
+
+#     acute = theta_deg < 60.0
+#     obtuse = theta_deg > 120.0
+#     reward = torch.zeros(env.num_envs, device=env.device)
+
+#     # 用 torch 操作批次處理
+#     mask_acute = (robot._angle_state == 0) & acute
+#     robot._angle_timer[mask_acute] += env.step_dt
+#     mask_switch_to_obtuse = (robot._angle_state == 0) & obtuse & (robot._angle_timer > 0.0) & (robot._angle_timer <= threshold)
+#     reward[mask_switch_to_obtuse] = 1.0
+#     robot._angle_state[mask_switch_to_obtuse] = 1
+#     robot._angle_timer[mask_switch_to_obtuse] = 0.0
+#     mask_reset_acute = (robot._angle_state == 0) & ~(acute | obtuse)
+#     robot._angle_timer[mask_reset_acute] = 0.0
+#     robot._angle_state[(robot._angle_state == 0) & obtuse] = 1
+
+#     mask_obtuse = (robot._angle_state == 1) & obtuse
+#     robot._angle_timer[mask_obtuse] += env.step_dt
+#     mask_switch_to_acute = (robot._angle_state == 1) & acute & (robot._angle_timer > 0.0) & (robot._angle_timer <= threshold)
+#     reward[mask_switch_to_acute] = 1.0
+#     robot._angle_state[mask_switch_to_acute] = 0
+#     robot._angle_timer[mask_switch_to_acute] = 0.0
+#     mask_reset_obtuse = (robot._angle_state == 1) & ~(acute | obtuse)
+#     robot._angle_timer[mask_reset_obtuse] = 0.0
+#     robot._angle_state[(robot._angle_state == 1) & acute] = 0
+
+#     mask_init_acute = (robot._angle_state != 0) & acute
+#     mask_init_obtuse = (robot._angle_state != 1) & obtuse
+#     robot._angle_state[mask_init_acute] = 0
+#     robot._angle_state[mask_init_obtuse] = 1
+#     robot._angle_timer[mask_init_acute | mask_init_obtuse] = 0.0
+
+#     # no reward for zero command
+#     reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+#     print("reward[0]:", reward[0].cpu().item())
+#     return reward
+
+
+def get_forward_direction_test(
+    env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    robot = env.scene[asset_cfg.name]
+    root_quat_w = robot.data.root_link_pose_w[:, 3:7]
+    forward_vec_b = robot.data.FORWARD_VEC_B
+    forward_vec_w = quat_apply(root_quat_w, forward_vec_b)
+
+    print("forward direction (world):", forward_vec_w.cpu().numpy())
+    return torch.zeros(env.num_envs, device=env.device)
 
 def track_ang_vel_z_world_exp(
     env, command_name: str, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")

@@ -387,3 +387,108 @@ G1_MINIMAL_CFG.spawn.usd_path = f"/home/fcuai/Desktop/G1.usd"
 
 This configuration removes most collision meshes to speed up simulation.
 """
+# 2025/08/11 ----------------------------------------------------
+G1_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=f"/home/fcuai/Desktop/final-20250724T081651Z-1-001/final/0814.usd",
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            retain_accelerations=False,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=1000.0,
+            max_depenetration_velocity=1.0,
+        ),
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            enabled_self_collisions=False, solver_position_iteration_count=8, solver_velocity_iteration_count=4
+        ),
+    ),
+    # 初始狀態
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.3), # 初始位置：74cm 高度
+        # rot=(-0.7071, 0.7071, 0.0, 0.0),  # 設定初始旋轉角度 (-90°, -90°, 0°)
+        # rot=(0.5, -0.5, -0.5, 0.5),  # 設定初始旋轉角度 (-90°, -90°, 0°)
+        # rot=(0.0, 0.0, -0.7071, 0.7071), # (-90, -180, 0)
+        joint_pos={ # total: 17
+            ".*_shoulder_joint": 0.0,
+            "left_arm_joint": 1.0,
+            "right_arm_joint": -1.0,
+            ".*_hand_joint": 0.0,
+            "waist_joint": 0.0,
+            "left_hip_joint": 0.0,
+            "right_hip_joint": 0.0,
+            "left_thigh_joint": 0.7,
+            "right_thigh_joint": -0.7,
+            # ".*_calf_joint": 0.0,
+            # ".*_ankle_joint": 0.0,
+            "left_calf_joint": -1.2,
+            "left_ankle_joint": 0.5,
+            "right_calf_joint": -1.2,
+            "right_ankle_joint": 0.5,
+            "left_foot_joint": 0.0,
+            "right_foot_joint": 0.0,
+        },
+        joint_vel={".*": 0.0},
+    ),
+    soft_joint_pos_limit_factor=0.9,
+    actuators={
+        "legs": ImplicitActuatorCfg(
+            joint_names_expr=[
+                ".*_hip_joint",
+                ".*_thigh_joint",
+                ".*_calf_joint",
+                "waist_joint",
+            ],
+            effort_limit=300,
+            velocity_limit=100.0,
+            stiffness={
+                ".*_hip_joint": 150.0,
+                ".*_thigh_joint": 200.0,
+                ".*_calf_joint": 200.0,
+                "waist_joint": 200.0,
+            },
+            damping={
+                ".*_hip_joint": 5.0,
+                ".*_thigh_joint": 5.0,
+                ".*_calf_joint": 5.0,
+                "waist_joint": 5.0,
+            },
+            armature={
+                ".*_hip_joint": 0.01,
+                ".*_thigh_joint": 0.01,
+                ".*_calf_joint": 0.01,
+                "waist_joint": 0.01,
+            },
+        ),
+        "feet": ImplicitActuatorCfg(
+            effort_limit=20,
+            joint_names_expr=[".*_ankle_joint", ".*_foot_joint"],
+            stiffness=20.0,
+            damping=2.0,
+            armature=0.01,
+        ),
+        "arms": ImplicitActuatorCfg(
+            joint_names_expr=[
+                ".*_shoulder_joint",
+                ".*_arm_joint",
+                ".*_hand_joint",
+            ],
+            effort_limit=300,
+            velocity_limit=100.0,
+            stiffness=40.0,
+            damping=10.0,
+            armature={
+                ".*_shoulder_joint": 0.01,
+                ".*_arm_joint": 0.01,
+                ".*_hand_joint": 0.01,
+            },
+        ),
+    },
+)
+"""Configuration for the Unitree G1 Humanoid robot."""
+
+
+G1_MINIMAL_CFG = G1_CFG.copy()
+G1_MINIMAL_CFG.spawn.usd_path = f"C:\\Users\\server\\Documents\\final-20250724T081651Z-1-001\\final\\0814.usd"
