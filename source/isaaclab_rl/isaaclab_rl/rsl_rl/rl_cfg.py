@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -68,7 +68,7 @@ class RslRlPpoActorCriticRecurrentCfg(RslRlPpoActorCriticCfg):
 class RslRlPpoAlgorithmCfg:
     """Configuration for the PPO algorithm."""
 
-    class_name: str = "PPO"
+    class_name: str = "SAC"
     """The algorithm class name. Default is PPO."""
 
     num_learning_epochs: int = MISSING
@@ -110,8 +110,8 @@ class RslRlPpoAlgorithmCfg:
     normalize_advantage_per_mini_batch: bool = False
     """Whether to normalize the advantage per mini-batch. Default is False.
 
-    If True, the advantage is normalized over the entire collected trajectories.
-    Otherwise, the advantage is normalized over the mini-batches only.
+    If True, the advantage is normalized over the mini-batches only.
+    Otherwise, the advantage is normalized over the entire collected trajectories.
     """
 
     symmetry_cfg: RslRlSymmetryCfg | None = None
