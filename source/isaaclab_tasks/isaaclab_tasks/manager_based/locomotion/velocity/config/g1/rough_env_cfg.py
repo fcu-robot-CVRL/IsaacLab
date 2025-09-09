@@ -46,7 +46,7 @@ class G1Rewards(RewardsCfg):
     )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-0.1,
+        weight=-1.0,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_foot_link"),
@@ -112,6 +112,23 @@ class G1Rewards(RewardsCfg):
             "max_last_time": 0.5,
         },
     )
+    
+    alternating_step_reward= RewTerm(
+        func=mdp.alternating_step_reward,
+        weight=-5,
+        params={
+            "command_name": "base_velocity",
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
+            "max_last_time": 0.5,
+        },
+    )
+    ang_vel_sign = RewTerm(func=mdp.joint_vel, 
+        weight=0.1,
+        params={"asset_cfg":
+            SceneEntityCfg(
+            "robot", joint_names=[".*_thigh_joint"]
+        )
+        },)
 
     ang_vel_sign = RewTerm(func=mdp.joint_vel, 
         weight=0.1,
