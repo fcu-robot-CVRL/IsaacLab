@@ -326,7 +326,6 @@ def contact_sensor_net_forces_w(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg
     """
     # extract the used quantities (to enable type-hinting)
     sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
-    
     # height scan: height = sensor_height - hit_point_z - offset
     return sensor.data.net_forces_w.squeeze(1)
 

@@ -119,10 +119,10 @@ class CommandsCfg:
 
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
+        resampling_time_range=(100.0, 100.0),
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
-        heading_command=True,
+        heading_command=False,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
@@ -296,19 +296,16 @@ class ObservationsCfg:
         #     noise=Unoise(n_min=-0.1, n_max=0.1),
         # )
         # contact_sensor left_ankle -------------------------------------------------------
-        # contact_sensor_left_ankle_roll_link = ObsTerm(
-        #     func=mdp.contact_sensor_L,
+        # contact_sensor_left = ObsTerm(
+        #     func=mdp.contact_sensor_net_forces_w,
         #     params={"sensor_cfg": SceneEntityCfg("contact_sensor_left")},
         #     noise=Unoise(n_min=-0.1, n_max=0.1),
         # )       
-        
-        # # contact_sensor right_ankle -------------------------------------------------------
-        # contact_sensor_right_ankle_roll_link = ObsTerm(
-        #     func=mdp.contact_sensor_R,
+        # contact_sensor_right = ObsTerm(
+        #     func=mdp.contact_sensor_net_forces_w,
         #     params={"sensor_cfg": SceneEntityCfg("contact_sensor_right")},
         #     noise=Unoise(n_min=-0.1, n_max=0.1),
-        # )
-
+        # )    
 
         def __post_init__(self):
             self.enable_corruption = True
@@ -526,7 +523,7 @@ class RewardsCfg:
     #     func=mdp.thigh_symmetry_reward,
     #     weight=1.0
     # )
-    action_smoothness_reward = RewTerm(func=mdp.action_smoothness_reward,weight=5,params={"smoothness_weight": 1.0, "max_change_rate": 0.3})
+    action_smoothness_reward = RewTerm(func=mdp.action_smoothness_reward,weight=0.1,params={"smoothness_weight": 1.0, "max_change_rate": 0.3})
 
 @configclass
 class TerminationsCfg:
@@ -537,7 +534,7 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
-    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.26})
+    torso_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.25})
 
 
 

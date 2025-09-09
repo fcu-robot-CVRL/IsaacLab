@@ -26,13 +26,18 @@ class G1Rewards(RewardsCfg):
         weight=5.0,
         params={"command_name": "base_velocity", "std": 0.5},
     )
-    print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
+    penalize_y_offset = RewTerm(
+        func=mdp.penalize_y_offset,
+        weight=-2.0,
+        params={"command_name": "base_velocity", "std": 0.5},
+    )
+    # print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_world_exp, weight=2.0, params={"command_name": "base_velocity", "std": 0.5}
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=0.25,
+        weight=0.5,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
@@ -62,7 +67,7 @@ class G1Rewards(RewardsCfg):
     )
     joint_deviation_arms = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
+        weight=-1.0,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -94,13 +99,13 @@ class G1Rewards(RewardsCfg):
     # )
     joint_deviation_waist = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
+        weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names="waist_joint")},
     )
     
     alternating_step_reward= RewTerm(
         func=mdp.alternating_step_reward,
-        weight=-5,
+        weight=0.5,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
@@ -124,6 +129,15 @@ class G1Rewards(RewardsCfg):
             "robot", joint_names=[".*_thigh_joint"]
         )
         },)
+
+    ang_vel_sign = RewTerm(func=mdp.joint_vel, 
+        weight=0.1,
+        params={"asset_cfg":
+            SceneEntityCfg(
+            "robot", joint_names=[".*_thigh_joint"]
+        )
+        },)
+
 
 
 @configclass
@@ -159,7 +173,7 @@ class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.lin_vel_z_l2.weight = 0.0
         self.rewards.undesired_contacts = None
         self.rewards.flat_orientation_l2.weight = -1.0
-        self.rewards.action_rate_l2.weight = -0.005
+        self.rewards.action_rate_l2.weight = -0.010
         self.rewards.dof_acc_l2.weight = -1.25e-8
         self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
@@ -168,11 +182,20 @@ class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
         )
-
+        self.rewards.dof_torques_l2_2.weight = -1e-7
+        self.rewards.dof_torques_l2_2.params["asset_cfg"] = SceneEntityCfg(
+            "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
+        )
         # Commands
-        self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)
-        self.commands.base_velocity.ranges.lin_vel_y = (-0.0, 0.0)
-        self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
+        # self.commands.base_velocity.ranges.lin_vel_x = (0.0, 1.0)
+        # self.commands.base_velocity.ranges.lin_vel_y = (-0.0, 0.0)
+        # self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
+
+        # 設定相對於機器人朝向的前進命令
+        # 這樣綠色箭頭會始終指向機器人的前方
+        self.commands.base_velocity.ranges.lin_vel_x = (0.5, 1.0)  # 相對前進速度
+        self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)  # 不側移
+        self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)  # 允許小幅轉向調整
 
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = ".*_hand_link"
@@ -200,6 +223,21 @@ class G1RoughEnvCfg_PLAY(G1RoughEnvCfg):
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
         self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
         self.commands.base_velocity.ranges.heading = (0.0, 0.0)
+
+        if hasattr(self.commands.base_velocity.ranges, 'lin_vel_z'):
+            print("Setting lin_vel_z to (0.0, 0.0) for play config.")
+            self.commands.base_velocity.ranges.lin_vel_z = (0.0, 0.0)
+    
+        # 確保傾斜角度為零（Roll 和 Pitch）
+        if hasattr(self.commands.base_velocity.ranges, 'ang_vel_x'):
+            print("Setting ang_vel_x to (0.0, 0.0) for play config.")
+
+            self.commands.base_velocity.ranges.ang_vel_x = (0.0, 0.0)
+            
+        if hasattr(self.commands.base_velocity.ranges, 'ang_vel_y'):
+            print("Setting ang_vel_y to (0.0, 0.0) for play config.")
+            self.commands.base_velocity.ranges.ang_vel_y = (0.0, 0.0)
+
         # disable randomization for play
         self.observations.policy.enable_corruption = False
         # remove random pushing

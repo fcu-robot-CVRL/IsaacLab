@@ -632,7 +632,6 @@ def action_smoothness_reward(
     
     return smoothness_reward * smoothness_weight
 
-
 def joint_vel(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize joint velocities on the articulation using L2 squared kernel.
 
@@ -651,12 +650,12 @@ def joint_vel(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg
     # 判斷正負是否不同
     different_sign = (vel1 * vel2 > 0).float()
     postorch = torch.where(
-        different_sign > 0.0,
-        ((pos1 + pos2).abs() < 0.1).float(),
+        different_sign > 0.0 ,
+        ((pos1 + pos2).abs() < 2.0).float(),
         torch.tensor(0.0, device=pos1.device)
     )
     # 給固定獎勵 1.0（你可以改成別的值）
     reward = different_sign * 1.0 + postorch * 50.0
-    print(postorch)
     return reward
     return  0#torch.sum(torch.square(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1)
+

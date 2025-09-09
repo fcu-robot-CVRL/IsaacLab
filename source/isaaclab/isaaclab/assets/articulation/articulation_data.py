@@ -89,7 +89,7 @@ class ArticulationData:
         self._joint_vel = TimestampedBuffer()
         self._joint_acc = TimestampedBuffer()
         self._body_incoming_joint_wrench_b = TimestampedBuffer()
-
+        self
     def update(self, dt: float):
         # update the simulation timestamp
         self._sim_timestamp += dt
