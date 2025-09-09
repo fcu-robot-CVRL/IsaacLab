@@ -140,6 +140,10 @@ def joint_torques_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEn
     """
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
+    data = asset.data.applied_torque[:, asset_cfg.joint_ids]
+    # for i in range(data.shape[1]):
+    #     print(asset_cfg.joint_ids[i], end=' ')
+    #     print(torch.mean(data[:, i]))
     return torch.sum(torch.square(asset.data.applied_torque[:, asset_cfg.joint_ids]), dim=1)
 
 
@@ -627,3 +631,32 @@ def action_smoothness_reward(
     smoothness_reward = torch.exp(-avg_change / max_change_rate)
     
     return smoothness_reward * smoothness_weight
+
+
+
+def joint_vel(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    """Penalize joint velocities on the articulation using L2 squared kernel.
+
+    NOTE: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their joint velocities contribute to the term.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: Articulation = env.scene[asset_cfg.name]
+    vel = asset.data.joint_vel[:, asset_cfg.joint_ids]
+    pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
+
+    vel1 = vel[:, 0]
+    vel2 = vel[:, 1]
+    pos1 = pos[:, 0]
+    pos2 = pos[:, 1]
+
+    # 判斷正負是否不同
+    different_sign = (vel1 * vel2 > 0).float()
+    postorch = torch.where(
+        different_sign > 0.0 ,
+        ((pos1 + pos2).abs() < 2.0).float(),
+        torch.tensor(0.0, device=pos1.device)
+    )
+    # 給固定獎勵 1.0（你可以改成別的值）
+    reward = different_sign * 1.0 + postorch * 50.0
+    return reward
+    return  0#torch.sum(torch.square(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1)

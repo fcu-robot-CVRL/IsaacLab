@@ -430,25 +430,51 @@ G1_CFG = ArticulationCfg(
     soft_joint_pos_limit_factor=0.9,
     actuators={
         "legs": ImplicitActuatorCfg(
+            # joint_names_expr=[
+            #     ".*_hip_joint",
+            #     ".*_thigh_joint",
+            #     ".*_calf_joint",
+            #     "waist_joint",
+            # ],
+            # effort_limit=300,
+            # velocity_limit=100.0,
+            # stiffness={
+            #     ".*_hip_joint": 150.0,
+            #     ".*_thigh_joint": 200.0,
+            #     ".*_calf_joint": 200.0,
+            #     "waist_joint": 200.0,
+            # },
+            # damping={
+            #     ".*_hip_joint": 5.0,
+            #     ".*_thigh_joint": 5.0,
+            #     ".*_calf_joint": 5.0,
+            #     "waist_joint": 5.0,
+            # },
+            # armature={
+            #     ".*_hip_joint": 0.01,
+            #     ".*_thigh_joint": 0.01,
+            #     ".*_calf_joint": 0.01,
+            #     "waist_joint": 0.01,
+            # },
             joint_names_expr=[
                 ".*_hip_joint",
                 ".*_thigh_joint",
                 ".*_calf_joint",
                 "waist_joint",
             ],
-            effort_limit=300,
-            velocity_limit=100.0,
+            effort_limit=100,
+            velocity_limit=75.0,
             stiffness={
-                ".*_hip_joint": 150.0,
-                ".*_thigh_joint": 200.0,
-                ".*_calf_joint": 200.0,
-                "waist_joint": 200.0,
+                ".*_hip_joint": 100.0,
+                ".*_thigh_joint": 150.0,
+                ".*_calf_joint": 150.0,
+                "waist_joint": 150.0,
             },
             damping={
-                ".*_hip_joint": 5.0,
-                ".*_thigh_joint": 5.0,
-                ".*_calf_joint": 5.0,
-                "waist_joint": 5.0,
+                ".*_hip_joint": 3.0,
+                ".*_thigh_joint": 3.0,
+                ".*_calf_joint": 3.0,
+                "waist_joint": 3.0,
             },
             armature={
                 ".*_hip_joint": 0.01,
@@ -458,10 +484,10 @@ G1_CFG = ArticulationCfg(
             },
         ),
         "feet": ImplicitActuatorCfg(
-            effort_limit=20,
+            effort_limit=10.0,#20
             joint_names_expr=[".*_ankle_joint", ".*_foot_joint"],
-            stiffness=20.0,
-            damping=2.0,
+            stiffness=20.0,#20.0,
+            damping=2.0,#2.0,
             armature=0.01,
         ),
         "arms": ImplicitActuatorCfg(

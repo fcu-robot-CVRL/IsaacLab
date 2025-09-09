@@ -78,7 +78,6 @@ def feet_slide(env, sensor_cfg: SceneEntityCfg, asset_cfg: SceneEntityCfg = Scen
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
     contacts = contact_sensor.data.net_forces_w_history[:, :, sensor_cfg.body_ids, :].norm(dim=-1).max(dim=1)[0] > 1.0
     asset = env.scene[asset_cfg.name]
-
     body_vel = asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :2]
     reward = torch.sum(body_vel.norm(dim=-1) * contacts, dim=1)
     return reward
@@ -95,6 +94,29 @@ def track_lin_vel_xy_yaw_frame_exp(
         torch.square(env.command_manager.get_command(command_name)[:, :2] - vel_yaw[:, :2]), dim=1
     )
     return torch.exp(-lin_vel_error / std**2)
+
+def penalize_y_offset(
+    env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), weight: float = -1.0
+) -> torch.Tensor:
+    """
+    Penalize Y軸速度偏移，偏離越多扣分越多。
+    Args:
+        env: simulation env
+        std: 標準差，控制懲罰敏感度
+        command_name: 指令名稱
+        asset_cfg: 機器人設定
+        weight: 懲罰權重（預設負值）
+    Returns:
+        torch.Tensor: 每個環境的懲罰分數
+    """
+    asset = env.scene[asset_cfg.name]
+    vel_yaw = quat_apply_inverse(yaw_quat(asset.data.root_quat_w), asset.data.root_lin_vel_w[:, :3])
+    error_y = torch.abs(env.command_manager.get_command(command_name)[:, 1] - vel_yaw[:, 1])
+    penalty = weight * torch.square(torch.abs(error_y) / std)
+    # print(env.command_manager.get_command(command_name)[:, 1])
+    # print(vel_yaw[:, 1])
+    # print("Y軸偏移懲罰:", penalty)
+    return penalty
 
 def get_body_pos_test(
     env, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
