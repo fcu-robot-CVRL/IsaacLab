@@ -512,4 +512,4 @@ G1_CFG = ArticulationCfg(
 
 
 G1_MINIMAL_CFG = G1_CFG.copy()
-G1_MINIMAL_CFG.spawn.usd_path = f"/home/fcuai/Desktop/final-20250724T081651Z-1-001/final/0814.usd"
+G1_MINIMAL_CFG.spawn.usd_path = f"C:\\Users\\server\\Documents\\final-20250724T081651Z-1-001\\final\\0814.usd"

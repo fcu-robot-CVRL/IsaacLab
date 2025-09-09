@@ -13,18 +13,10 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-<<<<<<< HEAD
 from isaaclab.envs import mdp
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import quat_apply_inverse, yaw_quat, quat_apply
-=======
-
-from isaaclab.envs import mdp
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.sensors import ContactSensor
-from isaaclab.utils.math import quat_apply_inverse, yaw_quat
->>>>>>> edc12e259a44370c38fd168ba9c51e7ecba9a9ed
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -131,7 +123,6 @@ def get_body_pos_test(
     robot = env.scene[asset_cfg.name]
     body_names = robot.body_names
     body_positions = robot.data.body_pos_w
-<<<<<<< HEAD
     left_thigh_link = body_positions[:, body_names.index("left_thigh_link"), :]
     right_thigh_link = body_positions[:, body_names.index("right_thigh_link"), :]
     print("left_thigh_link : ", left_thigh_link[0].cpu().numpy())
@@ -289,14 +280,6 @@ def get_forward_direction_test(
 
     print("forward direction (world):", forward_vec_w.cpu().numpy())
     return torch.zeros(env.num_envs, device=env.device)
-=======
-    print("所有身體部位位置:")
-    for i, name in enumerate(body_names):
-        pos = body_positions[0, i].cpu().numpy()  # 取第一個環境
-        print(f"{i:2d}: {name:25} x={pos[0]:6.3f}, y={pos[1]:6.3f}, z={pos[2]:6.3f}")
-    
-    return body_positions
->>>>>>> edc12e259a44370c38fd168ba9c51e7ecba9a9ed
 
 def track_ang_vel_z_world_exp(
     env, command_name: str, std: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
