@@ -74,7 +74,8 @@ class Critic(DeterministicMixin, Model):
 #         return self.env.step(action)
     
 # load and wrap the Isaac Lab environment
-env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
+env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=1)
+# env = load_isaaclab_env(task_name="Isaac-Velocity-Rough-G1-v0", num_envs=64)
 env = wrap_env(env)
 # env = SafeActionWrapper(env)  # optional: wrap the environment to ensure safe actions
 
@@ -103,8 +104,8 @@ cfg["gradient_steps"] = 1
 cfg["batch_size"] = 2048 #4096
 cfg["discount_factor"] = 0.99
 cfg["polyak"] = 0.005
-cfg["actor_learning_rate"] = 3e-4 #5e-4
-cfg["critic_learning_rate"] = 3e-4 #5e-4
+cfg["actor_learning_rate"] = 1e-4 #5e-4
+cfg["critic_learning_rate"] = 1e-4 #5e-4
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
 cfg["grad_norm_clip"] = 0
@@ -125,11 +126,11 @@ agent = SAC(models=models,
             action_space=env.action_space,
             device=device)
 
-agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-09-08_21-37-29-924565_SAC/checkpoints/agent_160000.pt")  # optional: load pre-trained agent. Adjust the path as needed.
+agent.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-08-29_17-00-48-414720_SAC/checkpoints/best_agent.pt")  # optional: load pre-trained agent. Adjust the path as needed.
 
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 1000000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training
-trainer.train()
+trainer.eval()

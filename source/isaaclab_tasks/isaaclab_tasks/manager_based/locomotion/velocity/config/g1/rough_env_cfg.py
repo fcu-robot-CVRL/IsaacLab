@@ -20,24 +20,24 @@ from isaaclab_assets import G1_MINIMAL_CFG  # isort: skip
 class G1Rewards(RewardsCfg):
     """Reward terms for the MDP."""
 
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-10.0)
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=5.0,
+        weight=3.0,#10.0
         params={"command_name": "base_velocity", "std": 0.5},
     )
-    penalize_y_offset = RewTerm(
-        func=mdp.penalize_y_offset,
-        weight=-2.0,
-        params={"command_name": "base_velocity", "std": 0.5},
-    )
+    # penalize_y_offset = RewTerm(
+    #     func=mdp.penalize_y_offset,
+    #     weight=-2.0,
+    #     params={"command_name": "base_velocity", "std": 0.5},
+    # )
     # print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_world_exp, weight=2.0, params={"command_name": "base_velocity", "std": 0.5}
+        func=mdp.track_ang_vel_z_world_exp, weight=1.0, params={"command_name": "base_velocity", "std": 0.5}
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=0.5,
+        weight=0.25,#0.5
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
@@ -46,7 +46,7 @@ class G1Rewards(RewardsCfg):
     )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-1.0,
+        weight=-0.1,#1.0
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_foot_link"),
@@ -103,25 +103,15 @@ class G1Rewards(RewardsCfg):
         params={"asset_cfg": SceneEntityCfg("robot", joint_names="waist_joint")},
     )
     
-    alternating_step_reward= RewTerm(
-        func=mdp.alternating_step_reward,
-        weight=0.5,
-        params={
-            "command_name": "base_velocity",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
-            "max_last_time": 0.5,
-        },
-    )
-    
-    alternating_step_reward= RewTerm(
-        func=mdp.alternating_step_reward,
-        weight=-5,
-        params={
-            "command_name": "base_velocity",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
-            "max_last_time": 0.5,
-        },
-    )
+    # alternating_step_reward= RewTerm(
+    #     func=mdp.alternating_step_reward,
+    #     weight=0.5,
+    #     params={
+    #         "command_name": "base_velocity",
+    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
+    #         "max_last_time": 0.5,
+    #     },
+    # )
     ang_vel_sign = RewTerm(func=mdp.joint_vel, 
         weight=0.1,
         params={"asset_cfg":
@@ -129,15 +119,15 @@ class G1Rewards(RewardsCfg):
             "robot", joint_names=[".*_thigh_joint"]
         )
         },)
-
-    ang_vel_sign = RewTerm(func=mdp.joint_vel, 
-        weight=0.1,
-        params={"asset_cfg":
-            SceneEntityCfg(
-            "robot", joint_names=[".*_thigh_joint"]
-        )
-        },)
-
+    # penalize_static_arms = RewTerm(
+    #     func=mdp.penalize_static_arms,
+    #     weight=-1.0,
+    #     params={
+    #         "arm_joint_keywords": ["shoulder", "elbow", "wrist", "hand"],
+    #         "min_movement": 0.2,
+    #         "penalty_weight": -1.0
+    #     }
+    # )
 
 
 @configclass
@@ -149,8 +139,8 @@ class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         super().__post_init__()
         # Scene
         self.scene.robot = G1_MINIMAL_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-        self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/rotated_base"
-
+        self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/g1/rotated_base"
+        
         # Randomization
         self.events.push_robot = None
         self.events.add_base_mass = None
@@ -173,8 +163,8 @@ class G1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.lin_vel_z_l2.weight = 0.0
         self.rewards.undesired_contacts = None
         self.rewards.flat_orientation_l2.weight = -1.0
-        self.rewards.action_rate_l2.weight = -0.010
-        self.rewards.dof_acc_l2.weight = -1.25e-8
+        self.rewards.action_rate_l2.weight = -0.02#-0.1
+        self.rewards.dof_acc_l2.weight = -5e-7#-1.25e-8
         self.rewards.dof_acc_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_ankle_joint", ".*_calf_joint",".*_thigh_joint"]
         )

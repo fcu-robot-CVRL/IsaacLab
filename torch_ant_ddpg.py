@@ -86,17 +86,19 @@ models["target_critic"] = Critic(env.observation_space, env.action_space, device
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ddpg.html#configuration-and-hyperparameters
 cfg = DDPG_DEFAULT_CONFIG.copy()
-cfg["exploration"]["noise"] = OrnsteinUhlenbeckNoise(theta=0.05, sigma=0.1, base_scale=0.5, device=device)
+cfg["exploration"]["noise"] = OrnsteinUhlenbeckNoise(theta=0.15, sigma=0.3, base_scale=4.0, device=device)#sigma0.0base2.0
 cfg["gradient_steps"] = 1
-cfg["batch_size"] = 4096
+cfg["batch_size"] = 1024
 cfg["discount_factor"] = 0.99
-cfg["polyak"] = 0.005
-cfg["actor_learning_rate"] = 5e-4
-cfg["critic_learning_rate"] = 5e-4
+cfg["polyak"] = 0.023
+cfg["actor_learning_rate"] = 2e-5
+cfg["critic_learning_rate"] = 2e-4
 cfg["random_timesteps"] = 0
-cfg["learning_starts"] = 80
+cfg["learning_starts"] = 0
 cfg["state_preprocessor"] = RunningStandardScaler
 cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": device}
+cfg["replay_buffer_size"] = 2e6
+
 # logging to TensorBoard and write checkpoints (in timesteps)
 cfg["experiment"]["write_interval"] = 800
 cfg["experiment"]["checkpoint_interval"] = 8000
@@ -109,9 +111,9 @@ agent = DDPG(models=models,
              action_space=env.action_space,
              device=device)
 
-agent.load("C:\\Users\\server\\IsaacLab\\runs\\torch\\Isaac-Ant-v0\\25-09-08_22-52-07-375585_DDPG\\checkpoints\\best_agent.pt")
+# agent.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-17_11-47-18-229223_DDPG/checkpoints/best_agent.pt")
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 640000, "headless": True}
+cfg_trainer = {"timesteps": 1000000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training

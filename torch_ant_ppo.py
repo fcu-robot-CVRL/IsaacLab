@@ -55,15 +55,15 @@ class Shared(GaussianMixin, DeterministicMixin, Model):
             return self.value_layer(shared_output), {}
 
 
-# load and wrap the Isaac Gym environment
-env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
+# load and wrap the Omniverse Isaac Gym environment
+env = load_isaaclab_env(task_name="Isaac-Humanoid-v0")
 env = wrap_env(env)
 
 device = env.device
 
 
 # instantiate a memory as rollout buffer (any memory can be used for this)
-memory = RandomMemory(memory_size=16, num_envs=env.num_envs, device=device)
+memory = RandomMemory(memory_size=32, num_envs=env.num_envs, device=device)
 
 
 # instantiate the agent's models (function approximators).
@@ -77,22 +77,22 @@ models["value"] = models["policy"]  # same instance: shared model
 # configure and instantiate the agent (visit its documentation to see all the options)
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html#configuration-and-hyperparameters
 cfg = PPO_DEFAULT_CONFIG.copy()
-cfg["rollouts"] = 16  # memory_size
-cfg["learning_epochs"] = 4
-cfg["mini_batches"] = 2  # 16 * 4096 / 32768
+cfg["rollouts"] = 32  # memory_size
+cfg["learning_epochs"] = 5
+cfg["mini_batches"] = 4  # 32 * 4096 / 32768
 cfg["discount_factor"] = 0.99
 cfg["lambda"] = 0.95
-cfg["learning_rate"] = 3e-4
+cfg["learning_rate"] = 5e-4
 cfg["learning_rate_scheduler"] = KLAdaptiveRL
 cfg["learning_rate_scheduler_kwargs"] = {"kl_threshold": 0.008}
 cfg["random_timesteps"] = 0
 cfg["learning_starts"] = 0
-cfg["grad_norm_clip"] = 0
+cfg["grad_norm_clip"] = 1.0
 cfg["ratio_clip"] = 0.2
 cfg["value_clip"] = 0.2
 cfg["clip_predicted_values"] = True
 cfg["entropy_loss_scale"] = 0.0
-cfg["value_loss_scale"] = 1.0
+cfg["value_loss_scale"] = 2.0
 cfg["kl_threshold"] = 0
 cfg["rewards_shaper"] = lambda rewards, timestep, timesteps: rewards * 0.01
 cfg["state_preprocessor"] = RunningStandardScaler
@@ -100,9 +100,9 @@ cfg["state_preprocessor_kwargs"] = {"size": env.observation_space, "device": dev
 cfg["value_preprocessor"] = RunningStandardScaler
 cfg["value_preprocessor_kwargs"] = {"size": 1, "device": device}
 # logging to TensorBoard and write checkpoints (in timesteps)
-cfg["experiment"]["write_interval"] = 40
-cfg["experiment"]["checkpoint_interval"] = 400
-cfg["experiment"]["directory"] = "runs/torch/Ant"
+cfg["experiment"]["write_interval"] = 160
+cfg["experiment"]["checkpoint_interval"] = 1600
+cfg["experiment"]["directory"] = "runs/torch/Isaac-Humanoid-v0"
 
 agent = PPO(models=models,
             memory=memory,
@@ -110,10 +110,10 @@ agent = PPO(models=models,
             observation_space=env.observation_space,
             action_space=env.action_space,
             device=device)
-
+# agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Humanoid-v0/25-09-12_15-19-32-270558_PPO/checkpoints/best_agent.pt")  # optional: load pre-trained agent. Adjust the path as needed.
 
 # configure and instantiate the RL trainer
-cfg_trainer = {"timesteps": 640000, "headless": True}
+cfg_trainer = {"timesteps": 1000000, "headless": True}
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=agent)
 
 # start training
@@ -127,7 +127,7 @@ trainer.train()
 # from skrl.utils.huggingface import download_model_from_huggingface
 
 # # download the trained agent's checkpoint from Hugging Face Hub and load it
-# path = download_model_from_huggingface("skrl/IsaacGymEnvs-Ant-PPO", filename="agent.pt")
+# path = download_model_from_huggingface("skrl/OmniIsaacGymEnvs-Humanoid-PPO", filename="agent.pt")
 # agent.load(path)
 
 # # start evaluation

@@ -331,3 +331,4 @@ def alternating_step_reward(
     reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
 
     return reward
+
