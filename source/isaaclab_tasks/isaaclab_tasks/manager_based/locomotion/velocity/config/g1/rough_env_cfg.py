@@ -23,7 +23,7 @@ class G1Rewards(RewardsCfg):
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=3.0,#10.0
+        weight=0.0,#10.0#3.0
         params={"command_name": "base_velocity", "std": 0.5},
     )
     # penalize_y_offset = RewTerm(
@@ -33,7 +33,7 @@ class G1Rewards(RewardsCfg):
     # )
     # print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_world_exp, weight=1.0, params={"command_name": "base_velocity", "std": 0.5}
+        func=mdp.track_ang_vel_z_world_exp, weight=0.0, params={"command_name": "base_velocity", "std": 0.5}#1.0
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,

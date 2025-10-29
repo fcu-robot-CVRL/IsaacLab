@@ -14,7 +14,27 @@ from skrl.utils import set_seed
 import gym
 import numpy as np
 
+# 全局變量來控制標記功能
+MARKERS_AVAILABLE = False
+VisualizationMarkers = None
+VisualizationMarkersCfg = None
+sim_utils = None
+math_utils = None
+ISAAC_NUCLEUS_DIR = None
 
+# 嘗試安全導入標記相關功能
+def safe_import_markers():
+    global MARKERS_AVAILABLE, VisualizationMarkers, VisualizationMarkersCfg, sim_utils, math_utils, ISAAC_NUCLEUS_DIR
+    try:
+        from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+        from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+        import isaaclab.sim as sim_utils
+        import isaaclab.utils.math as math_utils
+        MARKERS_AVAILABLE = True
+        print("Markers successfully loaded!")
+    except Exception as e:
+        print(f"Warning: Markers not available - {e}")
+        MARKERS_AVAILABLE = False
 # seed for reproducibility
 set_seed()  # e.g. `set_seed(42)` for fixed seed
 
@@ -76,43 +96,133 @@ class Critic(DeterministicMixin, Model):
     
 # load and wrap the Isaac Lab environment
 # env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
+# 添加標記箭頭所需的導入
+
+# 添加標記箭頭所需的導入
+try:
+    from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+    import isaaclab.sim as sim_utils
+    import isaaclab.utils.math as math_utils
+    MARKERS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Visualization markers not available: {e}")
+    MARKERS_AVAILABLE = False
+
+# 定義標記箭頭函數
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+def define_markers() -> VisualizationMarkers:
+    if not MARKERS_AVAILABLE:
+        return None
+        
+    """Define markers with various different shapes."""
+    marker_cfg = VisualizationMarkersCfg(
+        prim_path="/Visuals/myMarkers",
+        markers={
+                "forward": sim_utils.UsdFileCfg(
+                    usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
+                    scale=(0.25, 0.25, 0.5),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 1.0)),
+                ),
+                "command": sim_utils.UsdFileCfg(
+                    usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
+                    scale=(0.25, 0.25, 0.5),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
+                ),
+        },
+    )
+    return VisualizationMarkers(cfg=marker_cfg)
+
+# 創建標記包裝器類
+class MarkerWrapper(gym.Wrapper):
+
+    def __init__(self, env):
+        super().__init__(env)
+        if MARKERS_AVAILABLE:
+            self.visualization_markers = define_markers()
+            self.up_dir = torch.tensor([0.0, 0.0, 1.0]).to(env.device)
+            self.marker_offset = torch.zeros((env.cfg.scene.num_envs, 3)).to(env.device)
+            self.marker_offset[:, -1] = 0.5
+            
+            # 初始化命令方向（簡化版本，可根據需要調整）
+            self.commands = torch.randn((env.cfg.scene.num_envs, 3)).to(env.device)
+            self.commands[:, -1] = 0.0
+            self.commands = self.commands / torch.linalg.norm(self.commands, dim=1, keepdim=True)
+            
+            # 計算yaw角度
+            self._update_yaws()
+        else:
+            print("Markers not available - running without visualization")
+    
+    def _update_yaws(self):
+        if not MARKERS_AVAILABLE:
+            return
+            
+        ratio = self.commands[:, 1] / (self.commands[:, 0] + 1E-8)
+        gzero = torch.where(self.commands > 0, True, False)
+        lzero = torch.where(self.commands < 0, True, False)
+        plus = lzero[:, 0] * gzero[:, 1]
+        minus = lzero[:, 0] * lzero[:, 1]
+        offsets = torch.pi * plus - torch.pi * minus
+        self.yaws = torch.atan(ratio).reshape(-1, 1) + offsets.reshape(-1, 1)
+    
+    def _visualize_markers(self):
+        if not MARKERS_AVAILABLE or self.visualization_markers is None:
+            return
+            
+        try:
+            # 獲取機器人位置和方向
+            robot_pos = self.env.scene.articulations["robot"].data.root_pos_w
+            robot_quat = self.env.scene.articulations["robot"].data.root_quat_w
+            
+            # 設置標記位置（機器人上方）
+            marker_locations = robot_pos + self.marker_offset
+            
+            # 前進方向箭頭（跟隨機器人朝向）
+            forward_marker_orientations = robot_quat
+            
+            # 命令方向箭頭
+            command_marker_orientations = math_utils.quat_from_angle_axis(self.yaws, self.up_dir).squeeze()
+            
+            # 組合位置和旋轉
+            loc = torch.vstack((marker_locations, marker_locations))
+            rots = torch.vstack((forward_marker_orientations, command_marker_orientations))
+            
+            # 標記索引
+            all_envs = torch.arange(self.env.cfg.scene.num_envs)
+            indices = torch.hstack((torch.zeros_like(all_envs), torch.ones_like(all_envs)))
+            
+            # 顯示標記
+            self.visualization_markers.visualize(loc, rots, marker_indices=indices)
+        except Exception as e:
+            print(f"Warning: Failed to visualize markers: {e}")
+    
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        self._visualize_markers()  # 每步更新標記位置
+        return obs, reward, done, info
+    
+    def reset(self):
+        obs = self.env.reset()
+        if MARKERS_AVAILABLE:
+            # 重新隨機化命令方向
+            self.commands = torch.randn((self.env.cfg.scene.num_envs, 3)).to(self.env.device)
+            self.commands[:, -1] = 0.0
+            self.commands = self.commands / torch.linalg.norm(self.commands, dim=1, keepdim=True)
+            self._update_yaws()
+            self._visualize_markers()
+        return obs
+
+
+# seed for reproducibility
+set_seed()  # e.g. `set_seed(42)` for fixed seed
+
+# ...existing code...
+
+# load and wrap the Isaac Lab environment
 env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=6)
 env = wrap_env(env)
-# env = SafeActionWrapper(env)  # optional: wrap the environment to ensure safe actions
-
-def create_text_markers(env):
-    import isaaclab.sim as sim_utils
-    from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
-    """創建文字編號標記"""
-    
-    # 為每個環境創建不同的文字標記
-    markers_dict = {}
-    
-    for i in range(env.unwrapped.num_envs):
-        # 顏色
-        if i<2:
-            color = (i*0.3, 1.0, 1.0) 
-        elif i<4:
-            color = (1.0, (i-2)*0.3, 1.0)
-        else:
-            color = (1.0, 1.0, (i-4)*0.3)
-        # 創建文字平面標記
-        markers_dict[f"text_{i+1}"] = sim_utils.CuboidCfg(
-            size=(0.1, 0.1, 0.1),  # 正方體作為文字背景
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=color,
-                metallic=0.0,
-                roughness=0.2,
-            ),
-        )
-    
-    marker_cfg = VisualizationMarkersCfg(
-        prim_path="/World/Visuals/TextMarkers",
-        markers=markers_dict
-    )
-    
-    return VisualizationMarkers(marker_cfg)
-
+# 添加標記包裝器
+env = MarkerWrapper(env)
 
 device = env.device
 
@@ -260,110 +370,6 @@ agent6.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-10_16-38-47-649660_SAC/che
 cfg_trainer = {"timesteps": 1000000, "headless": False}
 # trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2],agents_scope=[1,1])
 
-robot_markers = create_text_markers(env)
-
-# 訓練開始前初始化標記位置
-def initialize_markers():
-    try:
-        robot = env.unwrapped.scene["robot"]
-        
-        # 直接使用根部位置（最安全的方法）
-        root_pos = robot.data.root_pos_w.cpu().numpy()
-        print(f"根部位置形狀: {root_pos.shape}")
-        
-        # 確保是正確的形狀 (num_envs, 3)
-        if len(root_pos.shape) == 2 and root_pos.shape[1] >= 3:
-            marker_positions = root_pos[:, :3].copy()
-        elif len(root_pos.shape) == 1 and len(root_pos) >= 3:
-            marker_positions = root_pos[:3].reshape(1, 3)
-        else:
-            # 創建默認位置
-            num_envs = env.unwrapped.num_envs
-            marker_positions = np.array([[0, 0, 1], [2, 0, 1]])[:num_envs]
-        
-        # 向上偏移
-        marker_positions[:, 2] += 0.8  # 向上1米
-        
-        # 設置標記
-        robot_markers.visualize(
-            translations=marker_positions,
-            marker_indices=list(range(len(marker_positions)))
-        )
-        
-        print(f"✓ 標記設置成功: {marker_positions}")
-        
-    except Exception as e:
-        print(f"✗ 標記設置失敗: {e}")
-
-def update_markers():
-    """實時更新標記位置 - 使用根部位置"""
-    try:
-        robot = env.unwrapped.scene["robot"]
-        
-        # 直接使用根部位置（與初始化相同的方法）
-        root_pos = robot.data.root_pos_w.cpu().numpy()
-        
-        # 確保是正確的形狀 (num_envs, 3)
-        if len(root_pos.shape) == 2 and root_pos.shape[1] >= 3:
-            marker_positions = root_pos[:, :3].copy()
-        elif len(root_pos.shape) == 1 and len(root_pos) >= 3:
-            marker_positions = root_pos[:3].reshape(1, 3)
-        else:
-            # 創建默認位置
-            num_envs = env.unwrapped.num_envs
-            marker_positions = np.zeros((num_envs, 3))
-            marker_positions[:, 2] = 1.0
-        
-        # 向上偏移
-        marker_positions[:, 2] += 0.8  # 向上 80cm
-        
-        # 更新標記
-        robot_markers.visualize(
-            translations=marker_positions,
-            marker_indices=list(range(len(marker_positions)))
-        )
-        
-    except Exception as e:
-        # 靜默處理錯誤，避免大量錯誤輸出
-        print("error:", e)
-
-# 在訓練循環中定期調用（每100步或每1000步）
-# ...existing code...
-import threading
-import time
-# ...existing code...
-
-class MarkerUpdatingTrainer(SequentialTrainer):
-    def _marker_loop(self, interval=2.0):
-        try:
-            while getattr(self, "_marker_running", False):
-                try:
-                    update_markers()
-                except Exception:
-                    pass
-                time.sleep(interval)
-        finally:
-            # 清理標誌
-            self._marker_running = False
-
-    def eval(self):
-        # 啟動標記更新執行緒
-        self._marker_running = True
-        self._marker_thread = threading.Thread(target=self._marker_loop, daemon=True)
-        self._marker_thread.start()
-
-        try:
-            result = super().eval()  # 這會在背景執行緒持續更新標記時執行完整的評估流程
-            return result
-        finally:
-            # 停止並等待執行緒結束
-            self._marker_running = False
-            if hasattr(self, "_marker_thread"):
-                self._marker_thread.join(timeout=1.0)
-    
-    
-# 在trainer.eval()之前調用
-initialize_markers()
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2, agent3, agent4, agent5, agent6], agents_scope=[1,1,1,1,1,1])
 # trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2], agents_scope=[1,1])
 
