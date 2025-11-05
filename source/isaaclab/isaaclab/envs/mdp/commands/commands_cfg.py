@@ -9,6 +9,8 @@ from dataclasses import MISSING
 from isaaclab.managers import CommandTermCfg
 from isaaclab.markers import VisualizationMarkersCfg
 from isaaclab.markers.config import BLUE_ARROW_X_MARKER_CFG, FRAME_MARKER_CFG, GREEN_ARROW_X_MARKER_CFG
+import isaaclab.sim as sim_utils  # 🔥 添加這行
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils import configclass
 
 from .null_command import NullCommand
@@ -85,7 +87,71 @@ class UniformVelocityCommandCfg(CommandTermCfg):
         prim_path="/Visuals/Command/velocity_goal"
     )
     """The configuration for the goal velocity visualization marker. Defaults to GREEN_ARROW_X_MARKER_CFG."""
-
+    # head_cube_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
+    #     prim_path="/Visuals/Command/head_cube",
+    #     markers={
+    #         "cube": sim_utils.CuboidCfg(
+    #             size=(0.2, 0.2, 0.2),  # 20cm 方塊
+    #             visual_material=sim_utils.PreviewSurfaceCfg(
+    #                 diffuse_color=(1.0, 1.0, 0.0),   # 黃色
+    #                 emissive_color=(1.0, 1.0, 0.0),  # 發光效果
+    #             ),
+    #         ),
+    #     },
+    # )
+    head_cube_visualizer_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
+        prim_path="/Visuals/Command/head_cube",
+        markers={
+            "cube_red": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 0.0, 0.0),  # 🔴 紅色
+                ),
+            ),
+            "cube_blue": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.0, 0.0, 1.0),  # 🔵 藍色
+                ),
+            ),
+            "cube_green": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.0, 1.0, 0.0),  # 🟢 綠色
+                ),
+            ),
+            "cube_yellow": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 1.0, 0.0),  # 🟡 黃色
+                ),
+            ),
+            "cube_cyan": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.0, 1.0, 1.0),  # 🔷 青色
+                ),
+            ),
+            "cube_magenta": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 0.0, 1.0),  # 🟣 洋紅
+                ),
+            ),
+            "cube_orange": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 0.5, 0.0),  # 🟠 橘色
+                ),
+            ),
+            "cube_purple": sim_utils.CuboidCfg(
+                size=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.6, 0.0, 0.8),  # 🟪 紫色
+                ),
+            ),
+        },
+    )
     current_vel_visualizer_cfg: VisualizationMarkersCfg = BLUE_ARROW_X_MARKER_CFG.replace(
         prim_path="/Visuals/Command/velocity_current"
     )

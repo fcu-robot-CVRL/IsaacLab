@@ -14,7 +14,7 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-
+        
         # change terrain to flat
         self.scene.terrain.terrain_type = "plane"
         self.scene.terrain.terrain_generator = None
@@ -33,17 +33,17 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         self.scene.contact_sensor_left.prim_path = "{ENV_REGEX_NS}/Robot/g1/left_foot_link"
         self.scene.contact_sensor_right.prim_path = "{ENV_REGEX_NS}/Robot/g1/right_foot_link"
         # Rewards
-        self.rewards.track_ang_vel_z_exp.weight = 1.0
-        self.rewards.lin_vel_z_l2.weight = -0.2
-        self.rewards.action_rate_l2.weight =-0.008# -0.005
-        self.rewards.dof_acc_l2.weight = -1.0e-7
-        self.rewards.feet_air_time.weight = 0.9#0.75
+        self.rewards.track_ang_vel_z_exp.weight = 0.0#1.0
+        self.rewards.lin_vel_z_l2.weight = -2#0.5
+        self.rewards.action_rate_l2.weight =-0.001# -0.008
+        self.rewards.dof_acc_l2.weight = -5.0e-8#-1.0e-7
+        self.rewards.feet_air_time.weight = 1.5#0.5
         self.rewards.feet_air_time.params["threshold"] = 0.9#0.4
-        self.rewards.dof_torques_l2.weight = -8.0e-8
+        self.rewards.dof_torques_l2.weight = -4.0e-8#-1.0e-7
         self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_ankle_joint",".*_calf_joint"]
         )
-        self.rewards.dof_torques_l2_2.weight = -1.0e-7
+        self.rewards.dof_torques_l2_2.weight = -2.0e-7
         self.rewards.dof_torques_l2_2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_thigh_joint"]
         )
@@ -56,7 +56,7 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         # Commands
         self.commands.base_velocity.ranges.lin_vel_x = (0.3, 1.0)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.2, 0.2)#(-0.5, 0.5)
-        self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)#(-1.0, 1.0)
+        self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)#(-1.0, 1.0)
 
 
 class G1FlatEnvCfg_PLAY(G1FlatEnvCfg):

@@ -125,39 +125,6 @@ env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=8)
 env = wrap_env(env)
 # env = SafeActionWrapper(env)  # optional: wrap the environment to ensure safe actions
 
-def create_text_markers(env):
-    import isaaclab.sim as sim_utils
-    from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
-    """創建文字編號標記"""
-    
-    # 為每個環境創建不同的文字標記
-    markers_dict = {}
-    
-    for i in range(env.unwrapped.num_envs):
-        # 顏色
-        if i<2:
-            color = (i*0.3, 1.0, 1.0) 
-        elif i<4:
-            color = (1.0, (i-2)*0.3, 1.0)
-        else:
-            color = (1.0, 1.0, (i-4)*0.3)
-        # 創建文字平面標記
-        markers_dict[f"text_{i+1}"] = sim_utils.CuboidCfg(
-            size=(0.1, 0.1, 0.1),  # 正方體作為文字背景
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=color,
-                metallic=0.0,
-                roughness=0.2,
-            ),
-        )
-    
-    marker_cfg = VisualizationMarkersCfg(
-        prim_path="/World/Visuals/TextMarkers",
-        markers=markers_dict
-    )
-    
-    return VisualizationMarkers(marker_cfg)
-
 
 device = env.device
 
@@ -323,116 +290,15 @@ agent3.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-05_12-20-25-663631_SAC/che
 agent4.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-05_12-20-25-663631_SAC/checkpoints/best_agent.pt")
 agent5.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-10_15-19-24-182667_SAC/checkpoints/best_agent.pt")
 agent6.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-10_16-38-47-649660_SAC/checkpoints/best_agent.pt")
-agent7.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-10-29_01-16-57-916063_DDPG/checkpoints/best_agent.pt")
-agent8.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-17_11-47-18-229223_DDPG/checkpoints/best_agent.pt")
+# agent7.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-10-29_01-16-57-916063_DDPG/checkpoints/best_agent.pt")
+# agent8.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-17_11-47-18-229223_DDPG/checkpoints/best_agent.pt")
+agent7.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-03_20-23-54-438451_DDPG/checkpoints/best_agent.pt")
+agent8.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-04_21-37-40-245396_DDPG/checkpoints/best_agent.pt")
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 1000000, "headless": False}
 # trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2],agents_scope=[1,1])
 
-robot_markers = create_text_markers(env)
 
-# 訓練開始前初始化標記位置
-def initialize_markers():
-    try:
-        robot = env.unwrapped.scene["robot"]
-        
-        # 直接使用根部位置（最安全的方法）
-        root_pos = robot.data.root_pos_w.cpu().numpy()
-        print(f"根部位置形狀: {root_pos.shape}")
-        
-        # 確保是正確的形狀 (num_envs, 3)
-        if len(root_pos.shape) == 2 and root_pos.shape[1] >= 3:
-            marker_positions = root_pos[:, :3].copy()
-        elif len(root_pos.shape) == 1 and len(root_pos) >= 3:
-            marker_positions = root_pos[:3].reshape(1, 3)
-        else:
-            # 創建默認位置
-            num_envs = env.unwrapped.num_envs
-            marker_positions = np.array([[0, 0, 1], [2, 0, 1]])[:num_envs]
-        
-        # 向上偏移
-        marker_positions[:, 2] += 0.8  # 向上1米
-        
-        # 設置標記
-        robot_markers.visualize(
-            translations=marker_positions,
-            marker_indices=list(range(len(marker_positions)))
-        )
-        
-        print(f"✓ 標記設置成功: {marker_positions}")
-        
-    except Exception as e:
-        print(f"✗ 標記設置失敗: {e}")
-
-def update_markers():
-    """實時更新標記位置 - 使用根部位置"""
-    try:
-        robot = env.unwrapped.scene["robot"]
-        
-        # 直接使用根部位置（與初始化相同的方法）
-        root_pos = robot.data.root_pos_w.cpu().numpy()
-        
-        # 確保是正確的形狀 (num_envs, 3)
-        if len(root_pos.shape) == 2 and root_pos.shape[1] >= 3:
-            marker_positions = root_pos[:, :3].copy()
-        elif len(root_pos.shape) == 1 and len(root_pos) >= 3:
-            marker_positions = root_pos[:3].reshape(1, 3)
-        else:
-            # 創建默認位置
-            num_envs = env.unwrapped.num_envs
-            marker_positions = np.zeros((num_envs, 3))
-            marker_positions[:, 2] = 1.0
-        
-        # 向上偏移
-        marker_positions[:, 2] += 0.8  # 向上 80cm
-        
-        # 更新標記
-        robot_markers.visualize(
-            translations=marker_positions,
-            marker_indices=list(range(len(marker_positions)))
-        )
-        
-    except Exception as e:
-        # 靜默處理錯誤，避免大量錯誤輸出
-        print("error:", e)
-
-# 在訓練循環中定期調用（每100步或每1000步）
-# ...existing code...
-import threading
-import time
-# ...existing code...
-
-class MarkerUpdatingTrainer(SequentialTrainer):
-    def _marker_loop(self, interval=2.0):
-        try:
-            while getattr(self, "_marker_running", False):
-                try:
-                    update_markers()
-                except Exception:
-                    pass
-                time.sleep(interval)
-        finally:
-            # 清理標誌
-            self._marker_running = False
-
-    def eval(self):
-        # 啟動標記更新執行緒
-        self._marker_running = True
-        self._marker_thread = threading.Thread(target=self._marker_loop, daemon=True)
-        self._marker_thread.start()
-
-        try:
-            result = super().eval()  # 這會在背景執行緒持續更新標記時執行完整的評估流程
-            return result
-        finally:
-            # 停止並等待執行緒結束
-            self._marker_running = False
-            if hasattr(self, "_marker_thread"):
-                self._marker_thread.join(timeout=1.0)
-    
-    
-# 在trainer.eval()之前調用
-initialize_markers()
 trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2, agent3, agent4, agent5, agent6, agent7, agent8], agents_scope=[1,1,1,1,1,1,1,1])
 # trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2], agents_scope=[1,1])
 

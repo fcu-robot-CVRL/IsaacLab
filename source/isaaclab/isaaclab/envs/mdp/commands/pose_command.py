@@ -47,7 +47,6 @@ class UniformPoseCommand(CommandTerm):
     def __init__(self, cfg: UniformPoseCommandCfg, env: ManagerBasedEnv):
         """Initialize the command generator class.
 
-        Args:
             cfg: The configuration parameters for the command generator.
             env: The environment object.
         """
@@ -63,6 +62,7 @@ class UniformPoseCommand(CommandTerm):
         self.pose_command_b = torch.zeros(self.num_envs, 7, device=self.device)
         self.pose_command_b[:, 3] = 1.0
         self.pose_command_w = torch.zeros_like(self.pose_command_b)
+        self.head_cube_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
         # -- metrics
         self.metrics["position_error"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["orientation_error"] = torch.zeros(self.num_envs, device=self.device)
@@ -134,13 +134,18 @@ class UniformPoseCommand(CommandTerm):
                 self.goal_pose_visualizer = VisualizationMarkers(self.cfg.goal_pose_visualizer_cfg)
                 # -- current body pose
                 self.current_pose_visualizer = VisualizationMarkers(self.cfg.current_pose_visualizer_cfg)
+                #cube
+                self.head_cube_visualizer = VisualizationMarkers(self.cfg.head_cube_visualizer_cfg)
+
             # set their visibility to true
             self.goal_pose_visualizer.set_visibility(True)
             self.current_pose_visualizer.set_visibility(True)
+            self.head_cube_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_pose_visualizer"):
                 self.goal_pose_visualizer.set_visibility(False)
                 self.current_pose_visualizer.set_visibility(False)
+                self.head_cube_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         # check if robot is initialized
@@ -153,3 +158,9 @@ class UniformPoseCommand(CommandTerm):
         # -- current body pose
         body_link_pose_w = self.robot.data.body_link_pose_w[:, self.body_idx]
         self.current_pose_visualizer.visualize(body_link_pose_w[:, :3], body_link_pose_w[:, 3:7])
+        self.head_cube_pos_w[:] = self.robot.data.root_pos_w.clone()
+        # 在機器人上方 1 米處放置方塊
+        self.head_cube_pos_w[:, 2] += 2.0  # Z 軸上移 1 米
+        
+        # 更新方塊視覺化
+        self.head_cube_visualizer.visualize(self.head_cube_pos_w)

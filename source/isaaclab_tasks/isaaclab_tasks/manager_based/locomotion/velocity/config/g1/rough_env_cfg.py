@@ -20,10 +20,10 @@ from isaaclab_assets import G1_MINIMAL_CFG  # isort: skip
 class G1Rewards(RewardsCfg):
     """Reward terms for the MDP."""
 
-    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-10.0)
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=0.0,#10.0#3.0
+        weight=10.0,#10.0#3.0
         params={"command_name": "base_velocity", "std": 0.5},
     )
     # penalize_y_offset = RewTerm(
@@ -33,7 +33,7 @@ class G1Rewards(RewardsCfg):
     # )
     # print_pos = RewTerm(func=mdp.get_body_pos_test, weight=0)
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_world_exp, weight=0.0, params={"command_name": "base_velocity", "std": 0.5}#1.0
+        func=mdp.track_ang_vel_z_world_exp, weight=10.0, params={"command_name": "base_velocity", "std": 0.5}#1.0
     )
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
@@ -46,7 +46,7 @@ class G1Rewards(RewardsCfg):
     )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-0.1,#1.0
+        weight=1.0,#1.0
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_foot_link"),
@@ -113,7 +113,7 @@ class G1Rewards(RewardsCfg):
     #     },
     # )
     ang_vel_sign = RewTerm(func=mdp.joint_vel, 
-        weight=0.1,
+        weight=1.0,
         params={"asset_cfg":
             SceneEntityCfg(
             "robot", joint_names=[".*_thigh_joint"]
