@@ -23,7 +23,7 @@ class G1Rewards(RewardsCfg):
     termination_penalty = RewTerm(func=mdp.is_terminated, weight=-10.0)
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=10.0,#10.0#3.0
+        weight=50.0,#30.0#3.0
         params={"command_name": "base_velocity", "std": 0.5},
     )
     # penalize_y_offset = RewTerm(

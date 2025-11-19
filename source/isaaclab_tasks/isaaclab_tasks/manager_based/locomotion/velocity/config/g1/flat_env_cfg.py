@@ -35,15 +35,15 @@ class G1FlatEnvCfg(G1RoughEnvCfg):
         # Rewards
         self.rewards.track_ang_vel_z_exp.weight = 0.0#1.0
         self.rewards.lin_vel_z_l2.weight = -2#0.5
-        self.rewards.action_rate_l2.weight =-0.001# -0.008
-        self.rewards.dof_acc_l2.weight = -5.0e-8#-1.0e-7
+        self.rewards.action_rate_l2.weight =-0.05# -0.02
+        self.rewards.dof_acc_l2.weight = -5.0e-4#-5.0e-8
         self.rewards.feet_air_time.weight = 1.5#0.5
         self.rewards.feet_air_time.params["threshold"] = 0.9#0.4
-        self.rewards.dof_torques_l2.weight = -4.0e-8#-1.0e-7
+        self.rewards.dof_torques_l2.weight = -4.0e-4#-1.0e-8
         self.rewards.dof_torques_l2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_ankle_joint",".*_calf_joint"]
         )
-        self.rewards.dof_torques_l2_2.weight = -2.0e-7
+        self.rewards.dof_torques_l2_2.weight = -2.0e-3#-2.0e-7
         self.rewards.dof_torques_l2_2.params["asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=[".*_thigh_joint"]
         )

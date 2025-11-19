@@ -174,16 +174,16 @@ class UniformVelocityCommand(CommandTerm):
                 self.goal_vel_visualizer = VisualizationMarkers(self.cfg.goal_vel_visualizer_cfg)
                 # -- current
                 self.current_vel_visualizer = VisualizationMarkers(self.cfg.current_vel_visualizer_cfg)
-                self.head_cube_visualizer = VisualizationMarkers(self.cfg.head_cube_visualizer_cfg)
+                # self.head_cube_visualizer = VisualizationMarkers(self.cfg.head_cube_visualizer_cfg)
             # set their visibility to true
             self.goal_vel_visualizer.set_visibility(True)
             self.current_vel_visualizer.set_visibility(True)
-            self.head_cube_visualizer.set_visibility(True)
+            # self.head_cube_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_vel_visualizer"):
                 self.goal_vel_visualizer.set_visibility(False)
                 self.current_vel_visualizer.set_visibility(False)
-                self.head_cube_visualizer.set_visibility(False)
+                # self.head_cube_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         # check if robot is initialized
@@ -201,14 +201,14 @@ class UniformVelocityCommand(CommandTerm):
         self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
         self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
         
-        self.head_cube_pos_w[:] = self.robot.data.root_pos_w.clone()
-        self.head_cube_pos_w[:, 2] += 1.0  # 在機器人上方 1 米
+        # self.head_cube_pos_w[:] = self.robot.data.root_pos_w.clone()
+        # self.head_cube_pos_w[:, 2] += 1.0  # 在機器人上方 1 米
         
-        # 🔥 使用 marker_indices 參數來指定每個環境的顏色
-        self.head_cube_visualizer.visualize(
-            self.head_cube_pos_w,
-            marker_indices=self.cube_color_indices  # 🔥 關鍵：指定顏色索引
-        )
+        # # 🔥 使用 marker_indices 參數來指定每個環境的顏色
+        # self.head_cube_visualizer.visualize(
+        #     self.head_cube_pos_w,
+        #     marker_indices=self.cube_color_indices  # 🔥 關鍵：指定顏色索引
+        # )
 
     """
     Internal helpers.

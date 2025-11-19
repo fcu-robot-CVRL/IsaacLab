@@ -120,9 +120,36 @@ class Critic_DDPG(DeterministicMixin, Model):
 #         return self.env.step(action)
     
 # load and wrap the Isaac Lab environment
-# env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=64)
+# env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=8)
 env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=8)
-env = wrap_env(env)
+env_unwrapped = env.unwrapped  # Access the unwrapped environment
+action_term = env_unwrapped.action_manager.get_term("joint_pos")
+original_scale = action_term.cfg.scale
+scale_per_robot = torch.tensor(
+    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.25, 0.25], 
+    device=env_unwrapped.device,
+    dtype=torch.float32
+)
+robot_info = [
+    ("Robot 0", "SAC-1", "agent"),
+    ("Robot 1", "SAC-2", "agent2"),
+    ("Robot 2", "SAC-3", "agent3"),
+    ("Robot 3", "SAC-4", "agent4"),
+    ("Robot 4", "SAC-5", "agent5"),
+    ("Robot 5", "SAC-6", "agent6"),
+    ("Robot 6", "DDPG-1", "agent7"),
+    ("Robot 7", "DDPG-2", "agent8"),
+]
+for i, (robot_name, algo_name, var_name) in enumerate(robot_info):
+    scale_value = scale_per_robot[i].item()
+    marker = "🔥" if scale_value != original_scale else "  "
+original_process_actions = action_term.process_actions
+scale_multiplier = scale_per_robot / original_scale
+def custom_process_actions(actions):
+    scaled_actions = actions * scale_multiplier.view(-1, 1)
+    return original_process_actions(scaled_actions)
+action_term.process_actions = custom_process_actions
+env = wrap_env(env_unwrapped)
 # env = SafeActionWrapper(env)  # optional: wrap the environment to ensure safe actions
 
 
