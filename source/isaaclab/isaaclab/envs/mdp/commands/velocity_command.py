@@ -76,6 +76,7 @@ class UniformVelocityCommand(CommandTerm):
 
         # crete buffers to store the command
         # -- command: x vel, y vel, yaw vel, heading
+        self.vel_command_w = torch.zeros(self.num_envs, 3, device=self.device)
         self.vel_command_b = torch.zeros(self.num_envs, 3, device=self.device)
         self.heading_target = torch.zeros(self.num_envs, device=self.device)
         self.is_heading_env = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
@@ -129,11 +130,11 @@ class UniformVelocityCommand(CommandTerm):
         # sample velocity commands
         r = torch.empty(len(env_ids), device=self.device)
         # -- linear velocity - x direction
-        self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
+        self.vel_command_w[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
         # -- linear velocity - y direction
-        self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
+        self.vel_command_w[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
         # -- ang vel yaw - rotation around z
-        self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
+        self.vel_command_w[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
         # heading target
         if self.cfg.heading_command:
             self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
@@ -143,12 +144,28 @@ class UniformVelocityCommand(CommandTerm):
         self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
 
     def _update_command(self):
-        """Post-processes the velocity command.
-
-        This function sets velocity command to zero for standing environments and computes angular
-        velocity from heading direction if the heading_command flag is set.
-        """
-        # Compute angular velocity from heading direction
+        # 🔥 步驟 1: 先將命令從本體座標系轉換到世界座標系（重力對齊）
+        # 獲取機器人當前的 yaw 角度（忽略 pitch 和 roll）
+        base_quat_w = self.robot.data.root_quat_w  # (num_envs, 4) [w, x, y, z]
+        w, x, y, z = base_quat_w[:, 0], base_quat_w[:, 1], base_quat_w[:, 2], base_quat_w[:, 3]
+        
+        # 從四元數提取 yaw 角度
+        yaw = torch.atan2(2 * (w * z + x * y), 1 - 2 * (y**2 + z**2))
+        
+        # 保存原始命令（本體座標系）
+        vel_body_x = self.vel_command_b[:, 0].clone()
+        vel_body_y = self.vel_command_b[:, 1].clone()
+        
+        # 計算旋轉（從本體轉到世界需要負 yaw）
+        cos_yaw = torch.cos(-yaw)
+        sin_yaw = torch.sin(-yaw)
+        
+        # 應用旋轉（世界 → 本體）
+        self.vel_command_b[:, 0] = self.vel_command_w[:, 0] * cos_yaw + self.vel_command_w[:, 1] * sin_yaw
+        self.vel_command_b[:, 1] = -self.vel_command_w[:, 0] * sin_yaw + self.vel_command_w[:, 1] * cos_yaw
+        self.vel_command_b[:, 2] = self.vel_command_w[:, 2]  # 角速度不變
+        
+        # 🔥 步驟 2: 計算朝向命令的角速度（如果啟用）
         if self.cfg.heading_command:
             # resolve indices of heading envs
             env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
@@ -159,10 +176,32 @@ class UniformVelocityCommand(CommandTerm):
                 min=self.cfg.ranges.ang_vel_z[0],
                 max=self.cfg.ranges.ang_vel_z[1],
             )
-        # Enforce standing (i.e., zero velocity command) for standing envs
-        # TODO: check if conversion is needed
+        
+        # 🔥 步驟 3: 設置站立環境的速度為零
         standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
         self.vel_command_b[standing_env_ids, :] = 0.0
+        self.vel_command_w[standing_env_ids, :] = 0.0
+        # 以下是原始
+        # """Post-processes the velocity command.
+
+        # This function sets velocity command to zero for standing environments and computes angular
+        # velocity from heading direction if the heading_command flag is set.
+        # """
+        # # Compute angular velocity from heading direction
+        # if self.cfg.heading_command:
+        #     # resolve indices of heading envs
+        #     env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
+        #     # compute angular velocity
+        #     heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - self.robot.data.heading_w[env_ids])
+        #     self.vel_command_b[env_ids, 2] = torch.clip(
+        #         self.cfg.heading_control_stiffness * heading_error,
+        #         min=self.cfg.ranges.ang_vel_z[0],
+        #         max=self.cfg.ranges.ang_vel_z[1],
+        #     )
+        # # Enforce standing (i.e., zero velocity command) for standing envs
+        # # TODO: check if conversion is needed
+        # standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
+        # self.vel_command_b[standing_env_ids, :] = 0.0
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # set visibility of markers
@@ -174,16 +213,17 @@ class UniformVelocityCommand(CommandTerm):
                 self.goal_vel_visualizer = VisualizationMarkers(self.cfg.goal_vel_visualizer_cfg)
                 # -- current
                 self.current_vel_visualizer = VisualizationMarkers(self.cfg.current_vel_visualizer_cfg)
-                # self.head_cube_visualizer = VisualizationMarkers(self.cfg.head_cube_visualizer_cfg)
+                # -- 頭上的標記
+                self.head_cube_visualizer = VisualizationMarkers(self.cfg.head_cube_visualizer_cfg)
             # set their visibility to true
             self.goal_vel_visualizer.set_visibility(True)
             self.current_vel_visualizer.set_visibility(True)
-            # self.head_cube_visualizer.set_visibility(True)
+            self.head_cube_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_vel_visualizer"):
                 self.goal_vel_visualizer.set_visibility(False)
                 self.current_vel_visualizer.set_visibility(False)
-                # self.head_cube_visualizer.set_visibility(False)
+                self.head_cube_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         # check if robot is initialized
@@ -201,14 +241,14 @@ class UniformVelocityCommand(CommandTerm):
         self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
         self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
         
-        # self.head_cube_pos_w[:] = self.robot.data.root_pos_w.clone()
-        # self.head_cube_pos_w[:, 2] += 1.0  # 在機器人上方 1 米
+        self.head_cube_pos_w[:] = self.robot.data.root_pos_w.clone()
+        self.head_cube_pos_w[:, 2] += 1.0  # 在機器人上方 1 米
         
-        # # 🔥 使用 marker_indices 參數來指定每個環境的顏色
-        # self.head_cube_visualizer.visualize(
-        #     self.head_cube_pos_w,
-        #     marker_indices=self.cube_color_indices  # 🔥 關鍵：指定顏色索引
-        # )
+        # 🔥 使用 marker_indices 參數來指定每個環境的顏色
+        self.head_cube_visualizer.visualize(
+            self.head_cube_pos_w,
+            marker_indices=self.cube_color_indices  # 🔥 關鍵：指定顏色索引
+        )
 
     """
     Internal helpers.

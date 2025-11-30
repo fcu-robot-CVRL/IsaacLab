@@ -323,38 +323,38 @@ def track_ang_vel_z_exp(
     return torch.exp(-ang_vel_error / std**2)
 
 # 測試-----------------------------------------------------------------------------
-# def move_towards_target(
-#     env: ManagerBasedRLEnv, 
-#     target_pos: tuple[float, float, float],
-#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
-# ) -> torch.Tensor:
-#     """Reward for moving towards the target position."""
-#     # extract the used quantities (to enable type-hinting)
-#     asset: RigidObject = env.scene[asset_cfg.name]
+def move_towards_target(
+    env: ManagerBasedRLEnv, 
+    target_pos: tuple[float, float, float],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward for moving towards the target position."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
     
-#     # 將目標位置轉換為張量
-#     target_pos_tensor = torch.tensor(target_pos, device=env.device, dtype=torch.float32)
+    # 將目標位置轉換為張量
+    target_pos_tensor = torch.tensor(target_pos, device=env.device, dtype=torch.float32)
     
-#     # 獲取機器人當前位置和速度
-#     current_pos = asset.data.root_pos_w[:, :3]  # 取 x, y, z 坐標
-#     current_velocity = asset.data.root_lin_vel_b[:, :2]  # 取 x, y 速度（身體坐標系）
+    # 獲取機器人當前位置和速度
+    current_pos = asset.data.root_pos_w[:, :3]  # 取 x, y, z 坐標
+    current_velocity = asset.data.root_lin_vel_b[:, :2]  # 取 x, y 速度（身體坐標系）
     
-#     # 計算到目標的方向向量（只考慮水平方向）
-#     to_target_vector = target_pos_tensor[:2] - current_pos[:, :2]  # 忽略 z 軸
-#     target_distance = torch.norm(to_target_vector, dim=1, keepdim=True)
+    # 計算到目標的方向向量（只考慮水平方向）
+    to_target_vector = target_pos_tensor[:2] - current_pos[:, :2]  # 忽略 z 軸
+    target_distance = torch.norm(to_target_vector, dim=1, keepdim=True)
     
-#     # 計算目標方向的單位向量（避免除零）
-#     target_direction = torch.where(
-#         target_distance > 0.01,
-#         to_target_vector / target_distance,
-#         torch.zeros_like(to_target_vector)
-#     )
+    # 計算目標方向的單位向量（避免除零）
+    target_direction = torch.where(
+        target_distance > 0.01,
+        to_target_vector / target_distance,
+        torch.zeros_like(to_target_vector)
+    )
     
-#     # 計算速度在目標方向上的投影（點積）
-#     velocity_projection = torch.sum(current_velocity * target_direction, dim=1)
+    # 計算速度在目標方向上的投影（點積）
+    velocity_projection = torch.sum(current_velocity * target_direction, dim=1)
     
-#     # 只獎勵正向移動（朝向目標），使用 clamp 限制在 0 以上
-#     return torch.clamp(velocity_projection, min=0.0)
+    # 只獎勵正向移動（朝向目標），使用 clamp 限制在 0 以上
+    return torch.clamp(velocity_projection, min=0.0)
 
 # # contact sensor rewards
 # def contact_ground_reward(

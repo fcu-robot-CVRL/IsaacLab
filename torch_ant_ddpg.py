@@ -112,8 +112,11 @@ agent = DDPG(models=models,
              device=device)
 
 # agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-10-30_19-37-38-822001_DDPG/checkpoints/best_agent.pt")
-agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-10-30_19-37-38-822001_DDPG/checkpoints/agent_512000.pt")
-# agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-19_11-27-51-592413_DDPG/checkpoints/best_agent.pt")
+agent.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-10-30_19-37-38-822001_DDPG/checkpoints/agent_512000.pt")
+
+# agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-23_23-59-51-252430_DDPG/checkpoints/best_agent.pt")
+# agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-24_12-15-41-981511_DDPG/checkpoints/best_agent.pt")
+# agent.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-25_22-16-46-249304_DDPG/checkpoints/best_agent.pt")
 
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 1000000, "headless": True}

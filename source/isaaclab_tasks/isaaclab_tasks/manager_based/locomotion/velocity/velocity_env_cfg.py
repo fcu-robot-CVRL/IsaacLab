@@ -39,6 +39,15 @@ from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
+    
+    target_marker = AssetBaseCfg(
+        prim_path="/World/TargetMarker",
+        spawn=sim_utils.SphereCfg(
+            radius=0.05,
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),  # 紅色
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),  # 目標位置
+    )
 
     # ground terrain
     terrain = TerrainImporterCfg(
@@ -120,14 +129,20 @@ class CommandsCfg:
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(100.0, 100.0),
-        rel_standing_envs=0.02,
+        rel_standing_envs=0.0, # 改為 0% 環境會被設為靜止
         rel_heading_envs=1.0,
-        heading_command=False,
+        heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(0.5, 0.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0.0, 0.0) # 展示
+            # lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         ),
+        # ranges=mdp.UniformPose2dCommandCfg.Ranges(
+        #     pos_x=(0.0, 0.0),   # 固定目標 X = 0
+        #     pos_y=(0.0, 0.0),   # 固定目標 Y = 0
+        #     heading=(0.0, 0.0)  # 固定朝向前方
+        # ),
     )
 
 
@@ -329,6 +344,7 @@ class EventCfg:
             "dynamic_friction_range": (0.6, 0.6),
             "restitution_range": (0.0, 0.0),
             "num_buckets": 64,
+            
         },
     )
 
@@ -366,15 +382,24 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+            "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}, # # 重置後固定面向
+            # "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
             "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
-            },
+                "x": (0.0, 0.0),
+                "y": (0.0, 0.0),
+                "z": (0.0, 0.0),
+                "roll": (0.0, 0.0),
+                "pitch": (0.0, 0.0),
+                "yaw": (0.0, 0.0),
+            }, # 展示
+            # "velocity_range": {
+            #     "x": (-0.5, 0.5),
+            #     "y": (-0.5, 0.5),
+            #     "z": (-0.5, 0.5),
+            #     "roll": (-0.5, 0.5),
+            #     "pitch": (-0.5, 0.5),
+            #     "yaw": (-0.5, 0.5),
+            # },
         },
     )
 
@@ -382,6 +407,7 @@ class EventCfg:
         func=mdp.reset_joints_by_scale,
         mode="reset",
         params={
+            # "position_range": (0.0, 0.0), # 展示
             "position_range": (0.5, 1.5),
             "velocity_range": (0.0, 0.0),
         },
@@ -403,7 +429,7 @@ class RewardsCfg:
     # move_towards_target = RewTerm(
     #     func=mdp.move_towards_target, 
     #     weight=10.0, 
-    #     params={"target_pos": (10.0, 0.0, 0.0)}  # 設定目標位置為 (10, 0, 0)
+    #     params={"target_pos": (1000.0, 0.0, 0.0)}  # 設定目標位置為 (10, 0, 0)
     # )
 
     # 新增的地板接觸獎勵

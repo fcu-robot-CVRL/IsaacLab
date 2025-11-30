@@ -109,7 +109,7 @@ class Critic_DDPG(DeterministicMixin, Model):
 
     def compute(self, inputs, role):
         return self.net(torch.cat([inputs["states"], inputs["taken_actions"]], dim=1)), {}
-    
+
 # class SafeActionWrapper(gym.Wrapper):
 #     def step(self, action):
 #         # 防止 NaN / INF
@@ -119,10 +119,28 @@ class Critic_DDPG(DeterministicMixin, Model):
 #         # print(f"Action after clipping: {action}")
 #         return self.env.step(action)
     
+
 # load and wrap the Isaac Lab environment
 # env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=8)
 env = load_isaaclab_env(task_name="Isaac-Velocity-Flat-G1-v0", num_envs=8)
 env_unwrapped = env.unwrapped  # Access the unwrapped environment
+
+# 獲取機器人實例並設置初始狀態
+robot = env_unwrapped.scene.articulations["robot"]
+
+spacing = 2.5  # 機器人之間的間距
+for i in range(env_unwrapped.num_envs):
+    # print(robot.data.default_root_state[i, :3])
+    x_offset = robot.data.root_pos_w[0, 0] - robot.data.root_pos_w[i, 0] - i * spacing  # 排成一排
+    y_offset = robot.data.root_pos_w[0, 1] - robot.data.root_pos_w[i, 1]
+    
+    robot.data.default_root_state[i, 0] = x_offset
+    robot.data.default_root_state[i, 1] = y_offset
+    # print(robot.data.default_root_state[i, 0:3])
+# 將修改後的初始狀態寫回模擬器
+robot.write_root_state_to_sim(robot.data.default_root_state)
+
+
 action_term = env_unwrapped.action_manager.get_term("joint_pos")
 original_scale = action_term.cfg.scale
 scale_per_robot = torch.tensor(
@@ -149,6 +167,7 @@ def custom_process_actions(actions):
     scaled_actions = actions * scale_multiplier.view(-1, 1)
     return original_process_actions(scaled_actions)
 action_term.process_actions = custom_process_actions
+
 env = wrap_env(env_unwrapped)
 # env = SafeActionWrapper(env)  # optional: wrap the environment to ensure safe actions
 
@@ -319,8 +338,8 @@ agent5.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-10_15-19-24-182667_SAC/che
 agent6.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-10_16-38-47-649660_SAC/checkpoints/best_agent.pt")
 # agent7.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-10-29_01-16-57-916063_DDPG/checkpoints/best_agent.pt")
 # agent8.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-09-17_11-47-18-229223_DDPG/checkpoints/best_agent.pt")
-agent7.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-03_20-23-54-438451_DDPG/checkpoints/best_agent.pt")
-agent8.load("/home/fcuai/IsaacLab/runs/torch/Isaac-Ant-v0/25-11-04_21-37-40-245396_DDPG/checkpoints/best_agent.pt")
+agent7.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-11-03_20-23-54-438451_DDPG/checkpoints/best_agent.pt")
+agent8.load("/media/fcuai/KINGSTON/Isaac-Ant-v0/25-11-04_21-37-40-245396_DDPG/checkpoints/best_agent.pt")
 # configure and instantiate the RL trainer
 cfg_trainer = {"timesteps": 1000000, "headless": False}
 # trainer = SequentialTrainer(cfg=cfg_trainer, env=env, agents=[agent, agent2],agents_scope=[1,1])
